@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="320" viewBox="0 0 240 320">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7b2cbf"/>
+      <stop offset="1" stop-color="#3a0ca3"/>
+    </linearGradient>
+    <pattern id="p" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M0 12 L24 12" stroke="#ffffff" stroke-opacity="0.14" stroke-width="2"/>
+      <path d="M12 0 L12 24" stroke="#ffffff" stroke-opacity="0.10" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect x="8" y="8" width="224" height="304" rx="18" fill="url(#bg)" stroke="#1f1b2e" stroke-width="6"/>
+  <rect x="18" y="18" width="204" height="284" rx="14" fill="url(#p)"/>
+  <text x="120" y="170" text-anchor="middle" font-family="system-ui, -apple-system" font-size="28" fill="#fff" opacity="0.85">Bài Chắn</text>
+</svg>

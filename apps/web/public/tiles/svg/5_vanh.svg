@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="320" viewBox="0 0 240 320">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" rx="22" ry="22" width="220" height="300" fill="#f7f2e8" stroke="#3a2e2a" stroke-width="6"/>
+  <rect x="18" y="18" rx="18" ry="18" width="204" height="284" fill="url(#g)" opacity="0.55"/>
+
+  <text x="24" y="44" font-family="ui-serif, 'Noto Serif CJK SC', 'Noto Serif', serif" font-size="22" fill="#3a2e2a" opacity="0.9">5-Văn</text>
+
+  <text x="120" y="160" text-anchor="middle"
+        font-family="ui-serif, 'Noto Serif CJK SC', 'Noto Serif', serif" font-size="96" fill="#c1121f">5</text>
+
+  <text x="120" y="220" text-anchor="middle"
+        font-family="ui-sans-serif, system-ui, -apple-system" font-size="28" fill="#3a2e2a" opacity="0.9">Văn</text>
+
+  <text x="120" y="292" text-anchor="middle"
+        font-family="ui-sans-serif, system-ui, -apple-system" font-size="18" fill="#3a2e2a" opacity="0.65">Bài Chắn</text>
+</svg>
