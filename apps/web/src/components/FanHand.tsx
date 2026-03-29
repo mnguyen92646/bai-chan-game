@@ -18,27 +18,35 @@ export function FanHand(props: {
     // - cards lie on an arc (y offset based on angle)
     // - rotation spreads the tops
     // - small x-spacing prevents severe overlap collisions
-    const maxAngle = Math.min(128, 28 + n * 3.4);
+    const maxAngle = Math.min(150, 34 + n * 3.9);
     const start = -maxAngle / 2;
     const step = n > 1 ? maxAngle / (n - 1) : 0;
 
     const maxSpread = 500;
     const spacing = n > 1 ? Math.min(24, maxSpread / (n - 1)) : 0;
 
-    // Arc depth controls how round the bottom feels.
-    // Push this harder so the fan is clearly rounded (less "square").
-    const arcDepth = Math.min(160, 64 + n * 2.4);
+    // Use a true circular arc so the bottom reads round (not square-ish).
+    // We model the fan as a circle segment with sagitta = arcDepth.
+    const arcDepth = Math.min(240, 96 + n * 3.2);
+
+    // precompute radius from half-chord and sagitta:
+    // R = w^2/(2d) + d/2  where w = halfChord, d = sagitta
+    const halfChord = Math.max(1, Math.abs(((n - 1) / 2) * spacing));
+    const d = Math.max(1, arcDepth);
+    const radius = halfChord * halfChord / (2 * d) + d / 2;
 
     return tiles.map((t, i) => {
       const angle = start + step * i;
       const x = (i - (n - 1) / 2) * spacing;
-      const rad = (angle * Math.PI) / 180;
-      // center lowest, edges higher -> rounded fan arc
-      // (1 - cos) gives a smooth bowl; scale it up for a more circular feel.
-      const y = -Math.round(arcDepth * (1 - Math.cos(rad)));
+
+      // Circle arc y: y = -(R - sqrt(R^2 - x^2))
+      // Deeper arcDepth => smaller R => stronger curvature.
+      const under = Math.max(0, radius * radius - x * x);
+      const yArc = -(radius - Math.sqrt(under));
+
       const distFromCenter = Math.abs(i - (n - 1) / 2);
       const z = 1000 - distFromCenter;
-      return { t, i, x, y, angle, spacing, z };
+      return { t, i, x, y: Math.round(yArc), angle, spacing, z };
     });
   }, [tiles]);
 
