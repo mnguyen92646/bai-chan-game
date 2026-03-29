@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "gen:buildinfo": "node ./scripts/generateBuildInfo.mjs",
+    "predev": "npm run -s gen:buildinfo",
     "dev": "next dev",
+    "prebuild": "npm run -s gen:buildinfo",
     "build": "next build",
+    "prestart": "npm run -s gen:buildinfo",
     "start": "next start",
     "lint": "eslint"
   },

@@ -10,14 +10,17 @@ export function startGame(params: {
 
   const playersById: Record<string, PlayerGameState> = {};
 
-  // Deal: dealer 20, others 19
-  // We deal by seat order starting at dealer for simplicity.
+  // Family table (120-card deck):
+  // - 5 players: everyone starts with 19; nọc (wall) = 25
+  // - 4 players: everyone starts with 23; nọc (wall) = 28
+  // No dealer bonus tile on the initial deal.
   const ordered = params.players.slice().sort((a, b) => a.seat - b.seat);
-  const dealerIndex = ordered.findIndex(p => p.seat === params.dealerSeat);
-  const dealOrder = dealerIndex >= 0 ? [...ordered.slice(dealerIndex), ...ordered.slice(0, dealerIndex)] : ordered;
 
-  for (const p of dealOrder) {
-    const count = p.seat === params.dealerSeat ? 20 : 19;
+  const nPlayers = params.players.length;
+  const base = nPlayers === 4 ? 23 : 19;
+
+  for (const p of ordered) {
+    const count = base;
     playersById[p.playerId] = {
       playerId: p.playerId,
       seat: p.seat,
@@ -38,8 +41,9 @@ export function startGame(params: {
   const game: GameState = {
     phase: "playing",
     dealerSeat: params.dealerSeat,
+    // Family rules: first player must draw.
     turnSeat: params.dealerSeat,
-    awaiting: "discard",
+    awaiting: "draw",
     wallCount: deck.length,
     lastDiscard: null,
     players: playersById

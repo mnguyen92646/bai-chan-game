@@ -8,7 +8,9 @@ import { getStoredLocale } from "@/lib/locale";
 import { getSocket } from "@/lib/socket";
 import { getToken, setToken } from "@/lib/playerToken";
 import { SortableHand } from "@/components/SortableHand";
+import { FanHand } from "@/components/FanHand";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { TableBoard } from "@/components/TableBoard";
 
 type PublicGame = {
   phase: "lobby" | "playing";
@@ -242,7 +244,7 @@ export default function RoomPage() {
   const canAdmin = Boolean(isHost || (playerId && !hostConnected));
 
   return (
-    <main className="min-h-screen p-4 max-w-md mx-auto">
+    <main className="min-h-screen p-4 w-full mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("room.title", { roomId })}</h1>
         <div className="flex items-center gap-2">
@@ -355,130 +357,45 @@ export default function RoomPage() {
         ) : null}
 
         {room?.publicGame?.phase === "playing" ? (
-          <div className="border rounded-md p-3 text-sm">
-            <div className="font-medium mb-2">{t("table.title")}</div>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-xs text-gray-600 mb-1">{t("table.drawPile")}</div>
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-28 sm:w-8 sm:h-32 md:w-10 md:h-40 border rounded overflow-hidden bg-white">
-                    <img src={require("@/lib/tileSrc").backPngSrc()} className="w-full h-full object-fill" alt="draw" />
-                  </div>
-                  <div className="text-xs text-gray-700">{room.publicGame.wallCount} {t("table.wallLeft")}</div>
-                </div>
+          <div className="mt-4">
+            <TableBoard
+              publicGame={room.publicGame}
+              youSeat={seat}
+              focusDiscard={focusDiscard}
+              setFocusDiscard={setFocusDiscard}
+            />
+
+            {/* Quick actions row */}
+            <div className="mt-3 flex flex-wrap gap-2 items-center justify-between">
+              <div className="text-xs text-gray-600">
+                Dealer: Seat {room.publicGame.dealerSeat} • Wall: {room.publicGame.wallCount} • Turn: Seat {room.publicGame.turnSeat} ({room.publicGame.awaiting})
               </div>
 
-              <div className="flex-1">
-                <div className="text-xs text-gray-600 mb-1">{t("table.lastDiscard")} {t("table.tapToHighlight")}</div>
-                {room.publicGame.lastDiscard?.tile ? (() => {
-                  const { tileInfo } = require("@/lib/tileMeta") as typeof import("@/lib/tileMeta");
-                  const info = tileInfo(room.publicGame.lastDiscard!.tile);
-                  return (
-                    <div className="text-[11px] text-gray-700 mb-2">
-                      <span className="font-medium">{t("table.discardLabel")}:</span> {info.labelEn} / {info.labelVi} <span className="text-gray-500">[{info.id}]</span>
-                    </div>
-                  );
-                })() : null}
-                <div className="flex items-center gap-3">
-                  {room.publicGame.lastDiscard?.tile ? (
-                    <button
-                      className={`w-7 h-28 sm:w-8 sm:h-32 md:w-10 md:h-40 border rounded overflow-hidden bg-white ${focusDiscard ? "ring-2 ring-amber-300" : ""}`}
-                      onClick={() => {
-                        const t = room.publicGame!.lastDiscard!.tile;
-                        setFocusDiscard((cur) => (cur === t ? "" : t));
-                      }}
-                      aria-label="Last discard"
-                    >
-                      <img
-                        src={require("@/lib/tileSrc").tilePngSrc(room.publicGame.lastDiscard.tile)}
-                        className="w-full h-full object-fill"
-                        alt={room.publicGame.lastDiscard.tile}
-                        draggable={false}
-                      />
-                    </button>
-                  ) : (
-                    <div className="w-7 h-28 sm:w-8 sm:h-32 md:w-10 md:h-40 border rounded bg-gray-50" />
-                  )}
-
-                  <button
-                    className={`rounded-md px-3 py-2 text-sm font-semibold transition shadow-sm border ${(() => {
-                      const d = room?.publicGame?.lastDiscard?.tile;
-                      if (!d) return "bg-zinc-100 text-zinc-400 border-zinc-200";
-                      const exact = hand.filter(t => t === d).length;
-                      const isYeu = (x: string) => x === "lao" || x === "chi" || x === "thang";
-                      const isNhat = (x: string) => /^1_(van|vanh|sach)$/.test(x);
-                      const inSpecial6 = (x: string) => isYeu(x) || isNhat(x);
-                      const eligible = exact >= 3 || (inSpecial6(d) && hand.filter(inSpecial6).length >= 3);
-                      return eligible
-                        ? "bg-emerald-200 text-emerald-900 border-emerald-300"
-                        : "bg-emerald-50 text-emerald-300 border-emerald-100";
-                    })()}`}
-                    disabled={(() => {
-                      const d = room?.publicGame?.lastDiscard?.tile;
-                      if (!d) return true;
-                      const exact = hand.filter(t => t === d).length;
-                      if (exact >= 3) return false;
-                      const isYeu = (x: string) => x === "lao" || x === "chi" || x === "thang";
-                      const isNhat = (x: string) => /^1_(van|vanh|sach)$/.test(x);
-                      const inSpecial6 = (x: string) => isYeu(x) || isNhat(x);
-                      if (inSpecial6(d)) {
-                        const cnt = hand.filter(inSpecial6).length;
-                        return cnt < 3;
-                      }
-                      return true;
-                    })()}
-                    onClick={() => {
-                      const socket = getSocket();
-                      socket.emit("game:chiu", {}, (resp: any) => {
-                        if (!resp?.ok) alert(resp?.error ?? "Chiu failed");
-                      });
-                    }}
-                  >
-                    {t("table.chiu")}
-                  </button>
-
-                  {(() => {
-                    const d = room.publicGame.lastDiscard?.tile;
-                    if (!d) return null;
-                    const exact = hand.filter(t => t === d).length;
-                    const isYeu = (x: string) => x === "lao" || x === "chi" || x === "thang";
-                    const isNhat = (x: string) => /^1_(van|vanh|sach)$/.test(x);
-                    const inSpecial6 = (x: string) => isYeu(x) || isNhat(x);
-                    const eligible = exact >= 3 || (inSpecial6(d) && hand.filter(inSpecial6).length >= 3);
-                    return (
-                      <div className={`text-xs ${eligible ? "text-emerald-700" : "text-gray-500"}`}>
-                        {eligible ? t("table.youCanChiu") : t("table.need3")}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                <div className="text-xs text-gray-600 mt-3 mb-1">{t("table.discardsLast5")}</div>
-                <div className="space-y-2">
-                  {room.publicGame.players
-                    .slice()
-                    .sort((a, b) => a.seat - b.seat)
-                    .map((p) => {
-                      const last5 = (p.discards ?? []).slice(-5);
-                      return (
-                        <div key={p.seat} className="flex items-center gap-2 border rounded px-2 py-1">
-                          <div className="text-xs w-7">S{p.seat}</div>
-                          <div className="flex gap-1 flex-wrap">
-                            {last5.length ? (
-                              last5.map((t, idx) => (
-                                <div key={idx} className="w-7 h-28 sm:w-8 sm:h-32 md:w-10 md:h-40 border rounded overflow-hidden bg-white">
-                                  <img src={require("@/lib/tileSrc").tilePngSrc(t)} className="w-full h-full object-fill" alt={t} />
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-xs text-gray-500">(none)</div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
+              <button
+                className={`rounded-md px-3 py-2 text-sm font-semibold transition shadow-sm border ${(() => {
+                  const d = room?.publicGame?.lastDiscard?.tile;
+                  if (!d) return "bg-zinc-100 text-zinc-400 border-zinc-200";
+                  const exact = hand.filter(t => t === d).length;
+                  const eligible = exact >= 3;
+                  return eligible
+                    ? "bg-emerald-200 text-emerald-900 border-emerald-300"
+                    : "bg-emerald-50 text-emerald-300 border-emerald-100";
+                })()}`}
+                disabled={(() => {
+                  const d = room?.publicGame?.lastDiscard?.tile;
+                  if (!d) return true;
+                  const exact = hand.filter(t => t === d).length;
+                  return exact < 3;
+                })()}
+                onClick={() => {
+                  const socket = getSocket();
+                  socket.emit("game:chiu", {}, (resp: any) => {
+                    if (!resp?.ok) alert(resp?.error ?? "Chiu failed");
+                  });
+                }}
+              >
+                {t("table.chiu")}
+              </button>
             </div>
           </div>
         ) : null}
@@ -531,14 +448,65 @@ export default function RoomPage() {
         const mustAn = false;
 
         function tileKey(t: string) {
-          // Sorting heuristic aligned with Chắn identities: chi first, then rank 2-9, then suit.
-          if (t === "chi") return `0_0`;
+          // Stable ordering key for tiles.
+          // chi + yeu tiles first, then rank 1-9, then suit.
+          if (t === "chi") return `0_00`;
+          if (t === "lao") return `0_01`;
+          if (t === "thang") return `0_02`;
           const m = t.match(/^(\d)_(van|vanh|sach)$/);
-          if (!m) return `9_9_${t}`;
+          if (!m) return `9_99_${t}`;
           const r = Number(m[1]);
           const suit = m[2];
           const suitOrder = suit === "van" ? 0 : suit === "vanh" ? 1 : 2;
           return `1_${String(r).padStart(2, "0")}_${suitOrder}`;
+        }
+
+        function groupKeyForFanSort(t: string) {
+          // Grouping key for cạ-like adjacency: same rank-group, plus special 6 group.
+          if (t === "chi" || t === "lao" || t === "thang") return "SPECIAL6";
+          const m = t.match(/^(\d)_(van|vanh|sach)$/);
+          if (!m) return `OTHER:${t}`;
+          const r = Number(m[1]);
+          if (r === 1) return "SPECIAL6";
+          return `RANK:${r}`;
+        }
+
+        function sortHandFanStyle(hand: string[]) {
+          // Fan-style heuristic:
+          // 1) pairs/triples/quads first (tiles with count>=2)
+          // 2) then cạ candidates (same groupKey with at least 2 distinct tiles)
+          // 3) then singles
+          const counts = new Map<string, number>();
+          for (const t of hand) counts.set(t, (counts.get(t) ?? 0) + 1);
+
+          const byGroup = new Map<string, Set<string>>();
+          for (const t of hand) {
+            const gk = groupKeyForFanSort(t);
+            if (!byGroup.has(gk)) byGroup.set(gk, new Set());
+            byGroup.get(gk)!.add(t);
+          }
+
+          function bucket(t: string) {
+            if ((counts.get(t) ?? 0) >= 2) return 0; // pairs first
+            const gk = groupKeyForFanSort(t);
+            const distinct = byGroup.get(gk);
+            if (distinct && distinct.size >= 2) return 1; // cạ candidates next
+            return 2;
+          }
+
+          return hand
+            .slice()
+            .sort((a, b) => {
+              const ba = bucket(a);
+              const bb = bucket(b);
+              if (ba !== bb) return ba - bb;
+
+              const ga = groupKeyForFanSort(a);
+              const gb = groupKeyForFanSort(b);
+              if (ga !== gb) return ga.localeCompare(gb);
+
+              return tileKey(a).localeCompare(tileKey(b));
+            });
         }
 
         return (
@@ -551,14 +519,25 @@ export default function RoomPage() {
             </div>
 
             <div className="mt-2">
-              <SortableHand
-                hand={hand}
-                setHand={setHand}
+              {/* New layout: fan hand like typical Chắn UIs */}
+              <FanHand
+                tiles={hand}
                 selected={selected}
-                setSelected={setSelected}
-                lastDrawnTile={lastDrawnTile}
+                onSelect={(t) => setSelected((cur) => (cur === t ? "" : t))}
                 highlightLike={focusDiscard}
               />
+
+              {/* Keep sortable hand available for debugging */}
+              <div className="hidden">
+                <SortableHand
+                  hand={hand}
+                  setHand={setHand}
+                  selected={selected}
+                  setSelected={setSelected}
+                  lastDrawnTile={lastDrawnTile}
+                  highlightLike={focusDiscard}
+                />
+              </div>
             </div>
 
             <div className="text-xs text-gray-600 mt-2">
@@ -596,7 +575,7 @@ export default function RoomPage() {
               <button
                 className="flex-1 rounded-md py-3 font-semibold transition shadow-sm bg-emerald-600 text-white border border-emerald-700 active:scale-[0.99]"
                 onClick={() => {
-                  setHand((prev) => prev.slice().sort((a, b) => tileKey(a).localeCompare(tileKey(b))));
+                  setHand((prev) => sortHandFanStyle(prev));
                 }}
               >
                 Auto-sort

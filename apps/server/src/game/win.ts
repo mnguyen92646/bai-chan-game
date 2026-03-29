@@ -24,19 +24,71 @@ export function groupKey(t: TileId): string {
   return `RANK:${rank}`;
 }
 
-export function isWinningHand(hand: TileId[]): boolean {
-  if (hand.length !== 20) return false;
+function requiredPairsForHandSize(n: number): number | null {
+  // Family table (120-card deck) uses different hand sizes depending on player count.
+  // We model Ù as:
+  // - N pairs (chắn = 2 identical) plus
+  // - the remaining tiles partition into groups of 4 that are "round" (same groupKey category).
+  //
+  // From Michael’s notes:
+  // - 5 players: win requires 8 pairs at 20 tiles (after draw)
+  // For 4 players we choose the most logical extension that keeps the structure the same:
+  // - 4 players: 24 tiles (after draw) => 10 pairs + 1 round group of 4.
+  if (n === 20) return 8;
+  if (n === 24) return 10;
+  return null;
+}
+
+function canPartitionIntoRoundGroups(tiles: TileId[]): boolean {
+  // A "round" group is 4 tiles all compatible by category (groupKey).
+  if (tiles.length % 4 !== 0) return false;
 
   const counts = new Map<string, number>();
-  for (const t of hand) {
+  for (const t of tiles) {
     const k = groupKey(t);
     counts.set(k, (counts.get(k) ?? 0) + 1);
   }
-
-  // Since every tile belongs to exactly one key in this model, the hand is winnable
-  // iff every bucket count is divisible by 4.
   for (const [, c] of counts) {
     if (c % 4 !== 0) return false;
   }
   return true;
+}
+
+export function isWinningHand(hand: TileId[]): boolean {
+  const neededPairs = requiredPairsForHandSize(hand.length);
+  if (!neededPairs) return false;
+
+  // Count exact tiles
+  const byTile = new Map<TileId, number>();
+  for (const t of hand) byTile.set(t, (byTile.get(t) ?? 0) + 1);
+
+  const tileIds = Array.from(byTile.keys()).sort();
+
+  // Backtracking: choose which exact pairs to take (matters when counts >= 4)
+  function dfs(idx: number, pairsTaken: number, remaining: Map<TileId, number>): boolean {
+    if (pairsTaken === neededPairs) {
+      // Build remaining tiles array
+      const rest: TileId[] = [];
+      for (const [t, c] of remaining) {
+        for (let i = 0; i < c; i++) rest.push(t);
+      }
+      return canPartitionIntoRoundGroups(rest);
+    }
+    if (idx >= tileIds.length) return false;
+
+    const t = tileIds[idx];
+    const c = remaining.get(t) ?? 0;
+
+    // Option 1: take a pair of this tile (if available)
+    if (c >= 2) {
+      remaining.set(t, c - 2);
+      if (dfs(idx, pairsTaken + 1, remaining)) return true;
+      remaining.set(t, c);
+    }
+
+    // Option 2: skip to next tile
+    return dfs(idx + 1, pairsTaken, remaining);
+  }
+
+  return dfs(0, 0, new Map(byTile));
 }
