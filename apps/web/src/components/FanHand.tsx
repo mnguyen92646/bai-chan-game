@@ -39,10 +39,10 @@ export function FanHand(props: {
       const angle = start + step * i;
       const x = (i - (n - 1) / 2) * spacing;
 
-      // Circle arc y: y = -(R - sqrt(R^2 - x^2))
-      // Deeper arcDepth => smaller R => stronger curvature.
+      // Circle arc y (inverted): center is highest, edges drop down (upside-down U / ∩).
+      // y = +(R - sqrt(R^2 - x^2))
       const under = Math.max(0, radius * radius - x * x);
-      const yArc = -(radius - Math.sqrt(under));
+      const yArc = radius - Math.sqrt(under);
 
       const distFromCenter = Math.abs(i - (n - 1) / 2);
       const z = 1000 - distFromCenter;
