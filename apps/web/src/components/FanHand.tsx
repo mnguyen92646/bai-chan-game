@@ -14,21 +14,27 @@ export function FanHand(props: {
   const layout = useMemo(() => {
     const n = tiles.length;
 
-    // Realistic hand fan for readability on mobile:
-    // - bottoms can overlap / be hidden
-    // - we care that TOPS are visible
-    // We'll use very small rotation and lots of x-spacing.
-    const maxAngle = Math.min(26, 6 + n * 0.6);
+    // Classic overlap fan (not a crown): each next card covers a bit more of the previous one.
+    // Bottoms converge (same baseline); right/top cards are "on top" via zIndex.
+    // We use tiny rotation (optional) + strong overlap spacing.
+    const cardW = 56; // baseline px for spacing math
+    const overlap = 0.62; // how much of each card is covered by the next one
+    const spacing = Math.max(12, Math.round(cardW * (1 - overlap))); // ~21px
+
+    const maxSpread = 560; // cap so it doesn't explode on desktop
+    const effectiveSpacing = n > 1 ? Math.min(spacing, Math.floor(maxSpread / (n - 1))) : 0;
+
+    // Slight angle to feel "hand-held" without crown spikes.
+    const maxAngle = Math.min(18, 6 + n * 0.35);
     const start = -maxAngle / 2;
     const step = n > 1 ? maxAngle / (n - 1) : 0;
 
-    const maxSpread = 820; // px across; prioritize top visibility
-    const spacing = n > 1 ? Math.min(44, maxSpread / (n - 1)) : 0;
-
     return tiles.map((t, i) => {
+      const x = (i - (n - 1) / 2) * effectiveSpacing;
       const angle = start + step * i;
-      const x = (i - (n - 1) / 2) * spacing;
-      return { t, i, angle, x, spacing };
+      // rightmost/topmost should be highest
+      const y = -Math.round(i * 1.15);
+      return { t, i, x, y, angle, effectiveSpacing };
     });
   }, [tiles]);
 
@@ -47,7 +53,7 @@ export function FanHand(props: {
     return () => document.body.classList.remove("overflow-hidden");
   }, [dragging]);
 
-  const spacing = layout[0]?.spacing ?? 24;
+  const spacing = layout[0]?.effectiveSpacing ?? 24;
 
   function indexFromClientX(clientX: number) {
     const el = containerRef.current;
@@ -86,7 +92,6 @@ export function FanHand(props: {
     if (from !== to) props.setTiles(moveInArray(tiles, from, to));
   }
 
-  const topClipHeight = 165; // only show the top portion; bottoms can converge/overlap offscreen
   const cardW = "clamp(44px, 6vw, 56px)";
   const cardH = "clamp(188px, 24vw, 230px)";
 
@@ -99,21 +104,17 @@ export function FanHand(props: {
       onPointerUp={onPointerUp}
       onPointerCancel={() => setDragging(null)}
     >
-      {/* Clip to show only card tops */}
-      <div className="relative w-full overflow-hidden" style={{ height: topClipHeight }}>
-        <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[1200px] max-w-[100vw]" style={{ height: Number(String(cardH).replace(/[^0-9.]/g, "")) || 240 }}>
+      <div className="relative w-full h-[250px]">
+        <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[1200px] max-w-[100vw] h-[250px]">
           {tiles.map((tile, idx) => {
             const base = layout[idx];
             const isSel = props.selected === tile;
             const isHL = props.highlightLike === tile;
 
-            const liftPx = isSel ? 10 : 0;
+            const liftPx = isSel ? 16 : 0;
 
             const isDraggingThis = dragging?.idx === idx;
             const dx = isDraggingThis ? dragging!.curX - dragging!.startX : 0;
-
-            // Push the card DOWN so only the top is visible inside the clip.
-            const sinkPx = 80;
 
             const style: React.CSSProperties = {
               position: "absolute",
@@ -122,8 +123,9 @@ export function FanHand(props: {
               width: cardW,
               height: cardH,
               transformOrigin: "bottom center",
-              transform: `translateX(calc(-50% + ${base.x + dx}px)) translateY(${sinkPx - liftPx}px) rotate(${base.angle}deg)` ,
-              zIndex: isDraggingThis ? 5000 : 1000 - Math.abs(idx - (tiles.length - 1) / 2),
+              transform: `translateX(calc(-50% + ${base.x + dx}px)) translateY(${base.y - liftPx}px) rotate(${base.angle}deg)`,
+              // rightmost/topmost should sit on top; dragging card should be above all.
+              zIndex: isDraggingThis ? 5000 : 1000 + idx,
               touchAction: "none",
             };
 
@@ -155,8 +157,8 @@ export function FanHand(props: {
         </div>
       </div>
 
-      {/* Spacer to keep controls from jumping up */}
-      <div style={{ height: 140 }} />
+      {/* spacer so controls don't overlap the hand */}
+      <div style={{ height: 40 }} />
     </div>
   );
 }
