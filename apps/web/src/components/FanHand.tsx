@@ -14,27 +14,29 @@ export function FanHand(props: {
   const layout = useMemo(() => {
     const n = tiles.length;
 
-    // Classic overlap fan (not a crown): each next card covers a bit more of the previous one.
-    // Bottoms converge (same baseline); right/top cards are "on top" via zIndex.
-    // We use tiny rotation (optional) + strong overlap spacing.
-    const cardW = 56; // baseline px for spacing math
-    const overlap = 0.62; // how much of each card is covered by the next one
-    const spacing = Math.max(12, Math.round(cardW * (1 - overlap))); // ~21px
-
-    const maxSpread = 560; // cap so it doesn't explode on desktop
-    const effectiveSpacing = n > 1 ? Math.min(spacing, Math.floor(maxSpread / (n - 1))) : 0;
-
-    // Slight angle to feel "hand-held" without crown spikes.
-    const maxAngle = Math.min(18, 6 + n * 0.35);
+    // Return to the "crown" baseline, but shape it into a compact FAN:
+    // - cards lie on an arc (y offset based on angle)
+    // - rotation spreads the tops
+    // - small x-spacing prevents severe overlap collisions
+    const maxAngle = Math.min(96, 22 + n * 2.8);
     const start = -maxAngle / 2;
     const step = n > 1 ? maxAngle / (n - 1) : 0;
 
+    const maxSpread = 520;
+    const spacing = n > 1 ? Math.min(26, maxSpread / (n - 1)) : 0;
+
+    // Arc depth controls how "fan" vs "crown" it looks.
+    const arcDepth = Math.min(82, 34 + n * 1.2);
+
     return tiles.map((t, i) => {
-      const x = (i - (n - 1) / 2) * effectiveSpacing;
       const angle = start + step * i;
-      // rightmost/topmost should be highest
-      const y = -Math.round(i * 1.15);
-      return { t, i, x, y, angle, effectiveSpacing };
+      const x = (i - (n - 1) / 2) * spacing;
+      const rad = (angle * Math.PI) / 180;
+      // center lowest, edges higher -> fan arc (compact)
+      const y = -Math.round(arcDepth * (1 - Math.cos(rad)));
+      const distFromCenter = Math.abs(i - (n - 1) / 2);
+      const z = 1000 - distFromCenter;
+      return { t, i, x, y, angle, spacing, z };
     });
   }, [tiles]);
 
@@ -53,7 +55,7 @@ export function FanHand(props: {
     return () => document.body.classList.remove("overflow-hidden");
   }, [dragging]);
 
-  const spacing = layout[0]?.effectiveSpacing ?? 24;
+  const spacing = layout[0]?.spacing ?? 24;
 
   function indexFromClientX(clientX: number) {
     const el = containerRef.current;
@@ -124,8 +126,8 @@ export function FanHand(props: {
               height: cardH,
               transformOrigin: "bottom center",
               transform: `translateX(calc(-50% + ${base.x + dx}px)) translateY(${base.y - liftPx}px) rotate(${base.angle}deg)`,
-              // rightmost/topmost should sit on top; dragging card should be above all.
-              zIndex: isDraggingThis ? 5000 : 1000 + idx,
+              // center cards slightly on top; dragged card above all
+              zIndex: isDraggingThis ? 5000 : base.z ?? 1000,
               touchAction: "none",
             };
 
