@@ -13,25 +13,28 @@ export function FanHand(props: {
   const layout = useMemo(() => {
     const n = tiles.length;
 
-    // A "real hand" fan: card bottoms converge (same pivot), card tops spread.
-    // We do this by placing all cards on the same bottom pivot and rotating.
-    // To keep all cards readable, we allow a wider fan for larger hands.
-    const maxAngle = Math.min(140, 26 + n * 3.2);
+    // "One-handed" fan: bottoms are close together, tops are spaced so every face is visible.
+    // Rotation alone causes a weird X-shape overlap; we need a small horizontal spacing too.
+    const maxAngle = Math.min(90, 18 + n * 2.4);
     const start = -maxAngle / 2;
     const step = n > 1 ? maxAngle / (n - 1) : 0;
 
+    // keep bottoms mostly together, but give each card a slight x offset so tops don't collide
+    const maxSpread = 320; // px total spread across the fan (tuned for 19–23 tiles)
+    const spacing = n > 1 ? Math.min(18, maxSpread / (n - 1)) : 0;
+
     return tiles.map((t, i) => {
       const angle = start + step * i;
-      // zIndex: center cards on top so you can still click/select
+      const x = (i - (n - 1) / 2) * spacing;
       const distFromCenter = Math.abs(i - (n - 1) / 2);
-      return { t, i, angle, z: 1000 - distFromCenter };
+      return { t, i, angle, x, z: 1000 - distFromCenter };
     });
   }, [tiles]);
 
   return (
     <div className="relative w-full h-[280px] select-none">
-      <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[880px] max-w-[98vw] h-[280px]">
-        {layout.map(({ t, i, angle, z }) => {
+      <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[980px] max-w-[100vw] h-[280px]">
+        {layout.map(({ t, i, angle, x, z }) => {
           const isSel = props.selected === t;
           const isHL = props.highlightLike === t;
 
@@ -46,11 +49,11 @@ export function FanHand(props: {
                 (isHL ? " ring-2 ring-amber-300" : "")
               }
               style={{
-                // Bottoms converge at the pivot point; tops spread via rotation.
-                transform: `translateX(-50%) translateY(-${liftPx}px) rotate(${angle}deg)`,
+                // Slight x-offset + rotation = classic hand fan where tops are visible.
+                transform: `translateX(calc(-50% + ${x}px)) translateY(-${liftPx}px) rotate(${angle}deg)`,
                 zIndex: z,
                 width: 52,
-                height: 192
+                height: 192,
               }}
               onClick={() => props.onSelect(t)}
               title={t}
