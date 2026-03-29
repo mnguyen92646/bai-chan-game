@@ -12,42 +12,49 @@ export function FanHand(props: {
 
   const layout = useMemo(() => {
     const n = tiles.length;
-    const maxAngle = Math.min(80, 10 + n * 2.2);
+
+    // A "real hand" fan: card bottoms converge (same pivot), card tops spread.
+    // We do this by placing all cards on the same bottom pivot and rotating.
+    // To keep all cards readable, we allow a wider fan for larger hands.
+    const maxAngle = Math.min(140, 26 + n * 3.2);
     const start = -maxAngle / 2;
     const step = n > 1 ? maxAngle / (n - 1) : 0;
 
     return tiles.map((t, i) => {
       const angle = start + step * i;
-      const radius = 240;
-      const y = Math.abs(angle) * 0.9; // small lift toward ends
-      return { t, i, angle, radius, y };
+      // zIndex: center cards on top so you can still click/select
+      const distFromCenter = Math.abs(i - (n - 1) / 2);
+      return { t, i, angle, z: 1000 - distFromCenter };
     });
   }, [tiles]);
 
   return (
-    <div className="relative w-full h-[260px] select-none">
-      <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[760px] max-w-[98vw] h-[260px]">
-        {layout.map(({ t, i, angle, radius, y }) => {
+    <div className="relative w-full h-[280px] select-none">
+      <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[880px] max-w-[98vw] h-[280px]">
+        {layout.map(({ t, i, angle, z }) => {
           const isSel = props.selected === t;
           const isHL = props.highlightLike === t;
-          const z = i;
+
+          const liftPx = isSel ? 18 : 0;
 
           return (
             <button
               key={`${t}:${i}`}
               className={
                 "absolute left-1/2 bottom-0 origin-bottom-center rounded-md overflow-hidden bg-white shadow-sm border transition " +
-                (isSel ? "-translate-y-4 border-amber-400 ring-2 ring-amber-200" : "border-white/40") +
+                (isSel ? "border-amber-400 ring-2 ring-amber-200" : "border-white/40") +
                 (isHL ? " ring-2 ring-amber-300" : "")
               }
               style={{
-                transform: `translateX(-50%) rotate(${angle}deg) translateY(-${y}px)`,
+                // Bottoms converge at the pivot point; tops spread via rotation.
+                transform: `translateX(-50%) translateY(-${liftPx}px) rotate(${angle}deg)`,
                 zIndex: z,
-                width: 46,
-                height: 180
+                width: 52,
+                height: 192
               }}
               onClick={() => props.onSelect(t)}
               title={t}
+              aria-label={t}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
