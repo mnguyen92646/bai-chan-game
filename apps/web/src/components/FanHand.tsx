@@ -18,21 +18,23 @@ export function FanHand(props: {
     // - cards lie on an arc (y offset based on angle)
     // - rotation spreads the tops
     // - small x-spacing prevents severe overlap collisions
-    const maxAngle = Math.min(96, 22 + n * 2.8);
+    const maxAngle = Math.min(128, 28 + n * 3.4);
     const start = -maxAngle / 2;
     const step = n > 1 ? maxAngle / (n - 1) : 0;
 
-    const maxSpread = 520;
-    const spacing = n > 1 ? Math.min(26, maxSpread / (n - 1)) : 0;
+    const maxSpread = 500;
+    const spacing = n > 1 ? Math.min(24, maxSpread / (n - 1)) : 0;
 
-    // Arc depth controls how "fan" vs "crown" it looks.
-    const arcDepth = Math.min(82, 34 + n * 1.2);
+    // Arc depth controls how round the bottom feels.
+    // Push this harder so the fan is clearly rounded (less "square").
+    const arcDepth = Math.min(160, 64 + n * 2.4);
 
     return tiles.map((t, i) => {
       const angle = start + step * i;
       const x = (i - (n - 1) / 2) * spacing;
       const rad = (angle * Math.PI) / 180;
-      // center lowest, edges higher -> fan arc (compact)
+      // center lowest, edges higher -> rounded fan arc
+      // (1 - cos) gives a smooth bowl; scale it up for a more circular feel.
       const y = -Math.round(arcDepth * (1 - Math.cos(rad)));
       const distFromCenter = Math.abs(i - (n - 1) / 2);
       const z = 1000 - distFromCenter;
