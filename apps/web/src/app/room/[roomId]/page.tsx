@@ -522,6 +522,7 @@ export default function RoomPage() {
               {/* New layout: fan hand like typical Chắn UIs */}
               <FanHand
                 tiles={hand}
+                setTiles={(next) => setHand(next)}
                 selected={selected}
                 onSelect={(t) => setSelected((cur) => (cur === t ? "" : t))}
                 highlightLike={focusDiscard}
