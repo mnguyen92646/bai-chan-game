@@ -342,19 +342,8 @@ export default function RoomPage() {
           <div className="text-xs text-gray-500">Only the room host can start (unless host disconnected).</div>
         ) : null}
 
-        {room?.publicGame?.phase === "playing" ? (
-          <div className="border rounded-md p-3 text-sm">
-            <div>
-              <span className="font-medium">Dealer:</span> Seat {room.publicGame.dealerSeat}
-            </div>
-            <div>
-              <span className="font-medium">Turn:</span> Seat {room.publicGame.turnSeat} ({room.publicGame.awaiting})
-            </div>
-            <div>
-              <span className="font-medium">Wall:</span> {room.publicGame.wallCount}
-            </div>
-          </div>
-        ) : null}
+        {/* When playing, these belong on the board, not in a separate panel */}
+        {room?.publicGame?.phase === "playing" ? null : null}
 
         {room?.publicGame?.phase === "playing" ? (
           <div className="mt-4">
@@ -366,11 +355,7 @@ export default function RoomPage() {
             />
 
             {/* Quick actions row */}
-            <div className="mt-3 flex flex-wrap gap-2 items-center justify-between">
-              <div className="text-xs text-gray-600">
-                Dealer: Seat {room.publicGame.dealerSeat} • Wall: {room.publicGame.wallCount} • Turn: Seat {room.publicGame.turnSeat} ({room.publicGame.awaiting})
-              </div>
-
+            <div className="mt-3 flex flex-wrap gap-2 items-center justify-end">
               <button
                 className={`rounded-md px-3 py-2 text-sm font-semibold transition shadow-sm border ${(() => {
                   const d = room?.publicGame?.lastDiscard?.tile;
@@ -401,45 +386,48 @@ export default function RoomPage() {
         ) : null}
       </div>
 
-      <div className="mt-6 space-y-2">
-        {(room?.players ?? []).length === 0 ? (
-          <div className="text-sm text-gray-600">No players yet.</div>
-        ) : (
-          room?.players.map((p) => {
-            const gp = room?.publicGame?.players?.find((x) => x.seat === p.seat);
-            return (
-              <div key={p.seat} className="border rounded-md p-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-medium">
-                      {t("room.seat", { seat: p.seat })} {seat === p.seat ? `(${t("room.you")})` : ""}
+      {/* Seat list is redundant during play; the board shows seat info */}
+      {room?.publicGame?.phase === "playing" ? null : (
+        <div className="mt-6 space-y-2">
+          {(room?.players ?? []).length === 0 ? (
+            <div className="text-sm text-gray-600">No players yet.</div>
+          ) : (
+            room?.players.map((p) => {
+              const gp = room?.publicGame?.players?.find((x) => x.seat === p.seat);
+              return (
+                <div key={p.seat} className="border rounded-md p-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-medium">
+                        {t("room.seat", { seat: p.seat })} {seat === p.seat ? `(${t("room.you")})` : ""}
+                      </div>
+                      <div className="text-sm text-gray-700">{p.nickname}</div>
                     </div>
-                    <div className="text-sm text-gray-700">{p.nickname}</div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className={`text-sm ${p.connected ? "text-green-700" : "text-gray-500"}`}>
-                      {p.connected ? t("room.connected") : t("room.disconnected")}
+                    <div className="flex items-center gap-3">
+                      <div className={`text-sm ${p.connected ? "text-green-700" : "text-gray-500"}`}>
+                        {p.connected ? t("room.connected") : t("room.disconnected")}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {room?.publicGame?.revealHands && gp?.hand ? (
-                  <div className="mt-2">
-                    <div className="text-xs text-gray-600 mb-1">Hand ({gp.hand.length})</div>
-                    <div className="flex gap-1 flex-wrap">
-                      {gp.hand.map((tid, idx) => (
-                        <div key={idx} className="w-7 h-28 sm:w-8 sm:h-32 md:w-10 md:h-40 border rounded overflow-hidden bg-white">
-                          <img src={require("@/lib/tileSrc").tilePngSrc(tid)} className="w-full h-full object-fill" alt={tid} />
-                        </div>
-                      ))}
+                  {room?.publicGame?.revealHands && gp?.hand ? (
+                    <div className="mt-2">
+                      <div className="text-xs text-gray-600 mb-1">Hand ({gp.hand.length})</div>
+                      <div className="flex gap-1 flex-wrap">
+                        {gp.hand.map((tid, idx) => (
+                          <div key={idx} className="w-7 h-28 sm:w-8 sm:h-32 md:w-10 md:h-40 border rounded overflow-hidden bg-white">
+                            <img src={require("@/lib/tileSrc").tilePngSrc(tid)} className="w-full h-full object-fill" alt={tid} />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })
-        )}
-      </div>
+                  ) : null}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {room?.publicGame?.phase === "playing" ? (() => {
         const myTurn = room.publicGame.turnSeat === seat;
@@ -524,7 +512,10 @@ export default function RoomPage() {
                 tiles={hand}
                 setTiles={(next) => setHand(next)}
                 selected={selected}
-                onSelect={(t) => setSelected((cur) => (cur === t ? "" : t))}
+                onSelect={(t) => {
+                  setSelected((cur) => (cur === t ? "" : t));
+                  setFocusDiscard(t);
+                }}
                 highlightLike={focusDiscard}
               />
 

@@ -105,36 +105,23 @@ function computeAnEligibility(params: {
 }) {
   const discardTile = params.discardTile;
 
-  // Vinagames: if you previously discarded this tile, you may not eat it later.
+  // Family rules: do NOT block eating a tile just because you discarded it earlier.
+  // (We only use cannotEatTiles for the "bỏ ăn" pass-penalty, not discard history.)
   if (params.cannotEatTiles?.includes(discardTile)) {
-    return { eligible: false, reason: "cannot_eat_tile_you_discarded" } as const;
+    return { eligible: false, reason: "bo_an_pass_penalty" } as const;
   }
 
   const canChan = params.meHand.includes(discardTile);
 
   const k = groupKey(discardTile);
 
-  // Vinagames: "ăn chọn cạ" — if you already have a cạ in this rank-group, you may not ăn cạ in the same group.
-  const distinctInGroup = Array.from(new Set(params.meHand.filter(t => groupKey(t) === k)));
-  const alreadyHasCaInGroup = distinctInGroup.length >= 2;
-
-  // Vinagames: if you've discarded both sides of a cạ in this rank-group, you may not ăn cạ in this group later.
-  const caBannedByHistory = params.noCaGroups?.includes(k) ?? false;
-
-  const caTiles = alreadyHasCaInGroup || caBannedByHistory
-    ? ([] as TileId[])
-    : (Array.from(new Set(params.meHand.filter(t => groupKey(t) === k && t !== discardTile))) as TileId[]);
+  // Family rules: ăn cạ is allowed whenever you have any compatible tile in the same rank-group.
+  // No additional Vinagames bans by prior cạ/discard history.
+  const caTiles = Array.from(new Set(params.meHand.filter(t => groupKey(t) === k && t !== discardTile))) as TileId[];
 
   const eligible = canChan || caTiles.length > 0;
   if (!eligible) {
-    return {
-      eligible: false,
-      reason: alreadyHasCaInGroup
-        ? "already_has_ca_in_group"
-        : caBannedByHistory
-          ? "ca_banned_by_discard_history"
-          : "no_matching_for_chan_or_ca"
-    } as const;
+    return { eligible: false, reason: "no_matching_for_chan_or_ca" } as const;
   }
 
   return {
@@ -164,7 +151,9 @@ function computeLegalDiscardTiles(params: {
     // Vinagames: cấm đánh chắn (cannot discard a tile while still holding its identical pair).
     // For MVP safety, we optionally allow breaking this rule if it would otherwise deadlock a turn.
     const sameCount = params.hand.filter(t => t === tile).length;
-    if (!params.allowDiscardChan && sameCount >= 2) continue;
+    // Family rules: only block discarding if it would break your ONLY pair (exactly 2 copies).
+    // If you have 3+ copies, you may discard one and still keep a pair.
+    if (!params.allowDiscardChan && sameCount === 2) continue;
 
     // Track discards by groupKey for "ăn/đánh cạ" rules.
     const gk = groupKey(tile);
@@ -762,12 +751,27 @@ io.on("connection", (socket) => {
       return cb?.({ ok: false, error: "Wall empty" });
     }
 
-    // Vinagames: choosing to draw means you have passed on the last discard ("bỏ ăn").
-    // Only the next player (turnSeat) is bound by this for that discard.
+    // Family rules: "bỏ ăn" penalty applies ONLY if you could have eaten the last discard
+    // and you chose to pass and draw.
     if (game.lastDiscard) {
       const passedTile = game.lastDiscard.tile;
-      me.rules.forbiddenDiscardTiles.push(passedTile);
-      audit(room, "PASS_DISCARD", { byPlayerId: playerId, bySeat: me.seat, tile: passedTile });
+
+      const elig = computeAnEligibility({
+        meHand: me.hand,
+        discardTile: passedTile,
+        cannotEatTiles: me.rules.cannotEatTiles,
+        noCaGroups: []
+      });
+
+      if (elig.eligible === true) {
+        // penalty (family clarification): cannot later eat that exact tile.
+        // (Discarding it later is allowed; otherwise triple-tiles can deadlock.)
+        if (!me.rules.cannotEatTiles.includes(passedTile)) me.rules.cannotEatTiles.push(passedTile);
+        audit(room, "PASS_DISCARD", { byPlayerId: playerId, bySeat: me.seat, tile: passedTile, penalty: true });
+      } else {
+        audit(room, "PASS_DISCARD", { byPlayerId: playerId, bySeat: me.seat, tile: passedTile, penalty: false, reason: elig.reason });
+      }
+
       // After drawing, you can no longer claim the prior discard; close the claim window.
       game.lastDiscard = null;
     }
@@ -831,7 +835,8 @@ io.on("connection", (socket) => {
 
     // Vinagames: cấm đánh chắn (cannot discard a tile while still holding its identical pair).
     const sameCount = me.hand.filter(t => t === tile).length;
-    const violatesChanRule = sameCount >= 2;
+    // Family rules: if you have 3 of the same tile, you can still discard one (leaving a pair).
+    const violatesChanRule = sameCount === 2;
 
     // Vinagames: If you've ever eaten a cạ, you may not discard both sides of a cạ as trash.
     const violatesSecondInGroupRule = me.rules.hasEatenCaEver && existing.some(t => t !== tile);
@@ -910,8 +915,8 @@ io.on("connection", (socket) => {
     me.hand.splice(idx, 1);
     me.discards.push(tile);
 
-    // Vinagames: once you discard a tile, you cannot eat that tile later.
-    if (!me.rules.cannotEatTiles.includes(tile)) me.rules.cannotEatTiles.push(tile);
+    // Family rules: discarding a tile does NOT permanently ban you from eating that tile later.
+    // (cannotEatTiles is reserved for the "bỏ ăn" pass-penalty only.)
 
     if (!existing.includes(tile)) existing.push(tile);
     me.rules.discardedByGroup[gk] = existing;
@@ -950,6 +955,14 @@ io.on("connection", (socket) => {
 
     // Update private hand for the discarder
     socket.emit("game:private", toPrivateGameState({ game, playerId }));
+
+    // IMPORTANT: update private state for the next player too (their UI uses this to enable Ăn).
+    const nextPlayerId = Object.values(game.players).find(p => p.seat === nextSeat)?.playerId;
+    const nextSockId = nextPlayerId ? room.playersById.get(nextPlayerId)?.socketId : undefined;
+    const nextSock = nextSockId ? io.sockets.sockets.get(nextSockId) : undefined;
+    if (nextPlayerId && nextSock) {
+      nextSock.emit("game:private", toPrivateGameState({ game, playerId: nextPlayerId }));
+    }
 
     return cb?.({ ok: true });
   });

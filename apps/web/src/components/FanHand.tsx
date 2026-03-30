@@ -14,39 +14,33 @@ export function FanHand(props: {
   const layout = useMemo(() => {
     const n = tiles.length;
 
-    // Return to the "crown" baseline, but shape it into a compact FAN:
-    // - cards lie on an arc (y offset based on angle)
-    // - rotation spreads the tops
-    // - small x-spacing prevents severe overlap collisions
-    const maxAngle = Math.min(150, 34 + n * 3.9);
+    // True "hand-held" fan:
+    // - bottoms converge towards a single thumb point
+    // - tops spread and are readable
+    // Achieve this by rotating around a point *below* the card bottom (thumb pivot).
+
+    // Wider open so each top is visible (like a one-handed card fan)
+    // Keep compact horizontally (especially on iPhone).
+    // Wider pivot => huge spread, so keep angles conservative.
+    const maxAngle = Math.min(88, 18 + n * 1.6);
     const start = -maxAngle / 2;
     const step = n > 1 ? maxAngle / (n - 1) : 0;
 
-    const maxSpread = 500;
-    const spacing = n > 1 ? Math.min(24, maxSpread / (n - 1)) : 0;
+    // Horizontal spacing is mainly for drag/drop indexing, not for visuals.
+    const spacing = n > 1 ? 18 : 0;
 
-    // Use a true circular arc so the bottom reads round (not square-ish).
-    // We model the fan as a circle segment with sagitta = arcDepth.
-    const arcDepth = Math.min(240, 96 + n * 3.2);
-
-    // precompute radius from half-chord and sagitta:
-    // R = w^2/(2d) + d/2  where w = halfChord, d = sagitta
-    const halfChord = Math.max(1, Math.abs(((n - 1) / 2) * spacing));
-    const d = Math.max(1, arcDepth);
-    const radius = halfChord * halfChord / (2 * d) + d / 2;
+    // IMPORTANT: no extra y-arc math here.
+    // The "fan" curvature should come from rotation about a thumb point below the cards.
+    // Adding y offsets makes it look like a U/∩ curve instead of a collapsible fan.
 
     return tiles.map((t, i) => {
       const angle = start + step * i;
-      const x = (i - (n - 1) / 2) * spacing;
-
-      // Circle arc y (inverted): center is highest, edges drop down (upside-down U / ∩).
-      // y = +(R - sqrt(R^2 - x^2))
-      const under = Math.max(0, radius * radius - x * x);
-      const yArc = radius - Math.sqrt(under);
+      // bias right: shift the "center" slightly left so more cards end up on the right
+      const x = (i - (n - 1) / 2 - 1.0) * spacing;
 
       const distFromCenter = Math.abs(i - (n - 1) / 2);
       const z = 1000 - distFromCenter;
-      return { t, i, x, y: Math.round(yArc), angle, spacing, z };
+      return { t, i, x, y: 0, angle, spacing, z };
     });
   }, [tiles]);
 
@@ -54,6 +48,7 @@ export function FanHand(props: {
     idx: number;
     startX: number;
     curX: number;
+    targetIdx: number;
   }>(null);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -65,7 +60,9 @@ export function FanHand(props: {
     return () => document.body.classList.remove("overflow-hidden");
   }, [dragging]);
 
-  const spacing = layout[0]?.spacing ?? 24;
+  // Use a stable pixel spacing for drag index estimation.
+  // (The visual fan is rotation-based, so layout spacing is not reliable for hit-testing.)
+  const spacing = 32;
 
   function indexFromClientX(clientX: number) {
     const el = containerRef.current;
@@ -88,24 +85,27 @@ export function FanHand(props: {
 
   function onPointerDown(idx: number, e: React.PointerEvent) {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    setDragging({ idx, startX: e.clientX, curX: e.clientX });
+    const t = indexFromClientX(e.clientX);
+    setDragging({ idx, startX: e.clientX, curX: e.clientX, targetIdx: t });
   }
 
   function onPointerMove(e: React.PointerEvent) {
     if (!dragging) return;
-    setDragging((d) => (d ? { ...d, curX: e.clientX } : d));
+    const t = indexFromClientX(e.clientX);
+    setDragging((d) => (d ? { ...d, curX: e.clientX, targetIdx: t } : d));
   }
 
   function onPointerUp(e: React.PointerEvent) {
     if (!dragging) return;
     const from = dragging.idx;
-    const to = indexFromClientX(e.clientX);
+    const to = dragging.targetIdx;
     setDragging(null);
     if (from !== to) props.setTiles(moveInArray(tiles, from, to));
   }
 
-  const cardW = "clamp(44px, 6vw, 56px)";
-  const cardH = "clamp(188px, 24vw, 230px)";
+  // Card size tuned for iPhone: keep readable but not overly wide.
+  const cardW = "clamp(40px, 5.4vw, 52px)";
+  const cardH = "clamp(176px, 22vw, 220px)";
 
   return (
     <div
@@ -117,13 +117,15 @@ export function FanHand(props: {
       onPointerCancel={() => setDragging(null)}
     >
       <div className="relative w-full h-[250px]">
-        <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[1200px] max-w-[100vw] h-[250px]">
+        {/* Bias the fan slightly to the right so "unmatched" tiles naturally sit right/top */}
+        <div className="absolute left-1/2 bottom-0 w-[1200px] max-w-[100vw] h-[250px]" style={{ transform: "translateX(calc(-50% + 28px))" }}>
           {tiles.map((tile, idx) => {
             const base = layout[idx];
             const isSel = props.selected === tile;
             const isHL = props.highlightLike === tile;
 
             const liftPx = isSel ? 16 : 0;
+            const sinkPx = 0; // container bottom is already sunk; keep transform clean
 
             const isDraggingThis = dragging?.idx === idx;
             const dx = isDraggingThis ? dragging!.curX - dragging!.startX : 0;
@@ -134,21 +136,28 @@ export function FanHand(props: {
               bottom: 0,
               width: cardW,
               height: cardH,
-              transformOrigin: "bottom center",
-              transform: `translateX(calc(-50% + ${base.x + dx}px)) translateY(${base.y - liftPx}px) rotate(${base.angle}deg)`,
-              // center cards slightly on top; dragged card above all
+              // Pivot far below the card bottom so bottoms converge to a thumb point.
+              transformOrigin: "50% 240%", 
+              transform: `translateX(calc(-50% + ${base.x + dx}px)) translateY(${base.y + sinkPx - liftPx}px) rotate(${base.angle}deg)`,
               zIndex: isDraggingThis ? 5000 : base.z ?? 1000,
               touchAction: "none",
             };
+
+            const target = dragging?.targetIdx ?? -1;
+            const willLandLeft = dragging ? Math.min(dragging.idx, target) : -1;
+            const willLandRight = dragging ? Math.max(dragging.idx, target) : -1;
+            const showLandingCue = dragging && idx !== dragging.idx && (idx === target || idx === target - 1);
+            const showRail = dragging && (idx === target || (target === 0 && idx === 0));
 
             return (
               <button
                 key={`${tile}:${idx}`}
                 style={style}
                 className={
-                  "rounded-md overflow-hidden bg-white shadow-sm border transition select-none touch-none " +
+                  "rounded-md overflow-hidden bg-white shadow-sm border transition select-none touch-none relative " +
                   (isSel ? "border-amber-400 ring-2 ring-amber-200" : "border-white/40") +
-                  (isHL ? " ring-2 ring-amber-300" : "")
+                  (isHL ? " ring-2 ring-amber-300" : "") +
+                  (showLandingCue ? " ring-2 ring-sky-300 border-sky-400" : "")
                 }
                 onClick={() => props.onSelect(tile)}
                 onPointerDown={(e) => onPointerDown(idx, e)}
@@ -157,6 +166,9 @@ export function FanHand(props: {
                 aria-label={tile}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
+                {showRail ? (
+                  <div className="absolute -right-1 top-2 bottom-2 w-[3px] bg-sky-300 shadow-[0_0_0_1px_rgba(56,189,248,0.35)] rounded" />
+                ) : null}
                 <img
                   src={require("@/lib/tileSrc").tilePngSrc(tile)}
                   className="w-full h-full object-fill"

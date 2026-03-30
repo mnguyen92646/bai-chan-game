@@ -111,35 +111,21 @@ export function toPrivateGameState(params: {
 
     const discardTile = ld.tile;
 
-    // Vinagames: if you previously discarded this tile, you may not eat it later.
+    // Family rules: do NOT block eating due to your own discard history.
+    // cannotEatTiles is used only for the "bỏ ăn" pass-penalty.
     if (p.rules.cannotEatTiles.includes(discardTile)) {
-      return { eligible: false as const, reason: "cannot_eat_tile_you_discarded" as const };
+      return { eligible: false as const, reason: "bo_an_pass_penalty" as const };
     }
 
     const canChan = p.hand.includes(discardTile);
 
     const k = groupKey(discardTile);
 
-    // Vinagames: "ăn chọn cạ" — if you already have a cạ in this rank-group, you may not ăn cạ in the same group.
-    const distinctInGroup = Array.from(new Set(p.hand.filter(t => groupKey(t) === k)));
-    const alreadyHasCaInGroup = distinctInGroup.length >= 2;
-
-    // Vinagames: if you've discarded both sides of a cạ in this rank-group, you may not ăn cạ in this group later.
-    const caBannedByHistory = p.rules.noCaGroups.includes(k);
-
-    const caTiles = alreadyHasCaInGroup || caBannedByHistory
-      ? ([] as TileId[])
-      : (Array.from(new Set(p.hand.filter(t => groupKey(t) === k && t !== discardTile))) as TileId[]);
+    // Family rules: ăn cạ is allowed whenever you have any compatible tile in the same rank-group.
+    const caTiles = Array.from(new Set(p.hand.filter(t => groupKey(t) === k && t !== discardTile))) as TileId[];
 
     if (!canChan && caTiles.length === 0) {
-      return {
-        eligible: false as const,
-        reason: alreadyHasCaInGroup
-          ? ("already_has_ca_in_group" as const)
-          : caBannedByHistory
-            ? ("ca_banned_by_discard_history" as const)
-            : ("no_match" as const)
-      };
+      return { eligible: false as const, reason: "no_match" as const };
     }
 
     return {

@@ -83,7 +83,7 @@ export type PrivateGameState = {
    */
   canAn?: boolean;
 
-  /** Vinagames-style ăn options from the current lastDiscard (if any). */
+  /** Family-rules ăn options from the current lastDiscard (if any). */
   an?:
     | {
         eligible: false;
@@ -94,9 +94,7 @@ export type PrivateGameState = {
           | "not_playing"
           | "discard_from_self"
           | "no_match"
-          | "cannot_eat_tile_you_discarded"
-          | "already_has_ca_in_group"
-          | "ca_banned_by_discard_history";
+          | "bo_an_pass_penalty";
       }
     | {
         eligible: true;
