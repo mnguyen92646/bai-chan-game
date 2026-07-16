@@ -48,39 +48,44 @@ export function TableBoard(props: {
     return (seat - youSeat + total) % total;
   }
 
-  function posClass(rel: number) {
-    // Layout positions around a felt table.
-    // 4p: 0 bottom, 1 left, 2 top, 3 right
-    // 5p: 0 bottom, 1 bottom-left, 2 left/top-left, 3 top, 4 right
-    if (total <= 4) {
-      if (rel === 0) return "left-1/2 bottom-4 -translate-x-1/2";
-      if (rel === 1) return "left-4 top-1/2 -translate-y-1/2";
-      if (rel === 2) return "left-1/2 top-4 -translate-x-1/2";
-      return "right-4 top-1/2 -translate-y-1/2";
-    }
-    // 5 players
-    if (rel === 0) return "left-1/2 bottom-4 -translate-x-1/2";
-    if (rel === 1) return "left-16 bottom-24";
-    if (rel === 2) return "left-4 top-1/2 -translate-y-1/2";
-    if (rel === 3) return "left-1/2 top-4 -translate-x-1/2";
-    return "right-4 top-1/2 -translate-y-1/2";
+  function polarPos(params: { angleDeg: number; radiusPct: number }) {
+    const rad = (params.angleDeg * Math.PI) / 180;
+    const x = 50 + params.radiusPct * Math.cos(rad);
+    const y = 50 + params.radiusPct * Math.sin(rad);
+    return {
+      left: `${x}%`,
+      top: `${y}%`,
+      transform: "translate(-50%, -50%)"
+    } as const;
   }
 
-  function discardDockClass(rel: number) {
-    if (total <= 4) {
-      if (rel === 0) return "left-1/2 bottom-36 -translate-x-1/2";
-      if (rel === 1) return "left-40 top-1/2 -translate-y-1/2";
-      if (rel === 2) return "left-1/2 top-28 -translate-x-1/2";
-      return "right-40 top-1/2 -translate-y-1/2";
-    }
-    if (rel === 0) return "left-1/2 bottom-36 -translate-x-1/2";
-    if (rel === 1) return "left-64 bottom-44";
-    if (rel === 2) return "left-40 top-1/2 -translate-y-1/2";
-    if (rel === 3) return "left-1/2 top-28 -translate-x-1/2";
-    return "right-40 top-1/2 -translate-y-1/2";
+  function vertexAngle(i: number) {
+    // Place polygon vertices so the bottom edge midpoint is at -90° ("you" position).
+    const step = 360 / total;
+    const start = -90 + step / 2;
+    return start + i * step;
   }
 
-  const lastDiscard = publicGame.lastDiscard?.tile ?? "";
+  function edgeMidAngle(i: number) {
+    // Edge midpoint between vertex i and i+1.
+    const step = 360 / total;
+    const start = -90 + step / 2;
+    return start + (i + 0.5) * step;
+  }
+
+  function playerStyle(rel: number) {
+    // rel=0 is bottom edge midpoint.
+    const edgeIndex = (total - 1 + rel) % total;
+    const angle = edgeMidAngle(edgeIndex);
+    return polarPos({ angleDeg: angle, radiusPct: total === 5 ? 42 : 44 });
+  }
+
+  function gateStyle(rel: number) {
+    // Discard "gates" live at polygon corners (vertices).
+    const vIndex = (total - 1 + rel) % total;
+    const angle = vertexAngle(vIndex);
+    return polarPos({ angleDeg: angle, radiusPct: total === 5 ? 26 : 28 });
+  }
 
   return (
     <div className="relative w-full h-[62vh] min-h-[520px] overflow-hidden rounded-2xl border border-black/20 shadow-sm">
@@ -118,7 +123,7 @@ export function TableBoard(props: {
         }
 
         return (
-          <div key={p.playerId} className={`absolute ${posClass(rel)} max-w-[220px]`}>
+          <div key={p.playerId} className="absolute max-w-[200px]" style={playerStyle(rel)}>
             <div
               className={`rounded-xl px-3 py-2 backdrop-blur border shadow-sm ${
                 isTurn
@@ -167,13 +172,13 @@ export function TableBoard(props: {
               ) : null}
             </div>
 
-            {/* discards strip near player */}
-            <div className={`absolute ${discardDockClass(rel)} w-[260px]`}>
-              <div className="flex gap-1.5 items-center">
+            {/* discard gate (corner between players) */}
+            <div className="absolute" style={gateStyle(rel)}>
+              <div className="flex gap-1 items-center">
                 {(p.discards ?? []).slice(-6).map((t, idx) => (
                   <button
                     key={idx}
-                    className={`w-7 h-24 sm:w-8 sm:h-28 border rounded bg-white/90 overflow-hidden shadow-sm ${
+                    className={`w-6 h-20 border rounded bg-white/90 overflow-hidden shadow-sm ${
                       props.focusDiscard === t ? "ring-2 ring-amber-300" : "border-white/30"
                     }`}
                     title={t}
@@ -194,10 +199,7 @@ export function TableBoard(props: {
         );
       })}
 
-      {/* footer turn text */}
-      <div className="absolute left-1/2 bottom-3 -translate-x-1/2 text-[11px] text-white/70">
-        Turn: Seat {publicGame.turnSeat} ({publicGame.awaiting})
-      </div>
+      {/* turn indicator is shown on the active player's badge */}
     </div>
   );
 }

@@ -814,102 +814,8 @@ io.on("connection", (socket) => {
     const idx = me.hand.indexOf(tile);
     if (idx < 0) return cb?.({ ok: false, error: "Tile not in hand" });
 
-    // Vinagames "bỏ ăn" rule: if you ate or passed a tile before, you may not discard that tile later.
-    if (me.rules.forbiddenDiscardTiles.includes(tile)) {
-      audit(room, "DISCARD_REJECT", {
-        byPlayerId: playerId,
-        bySeat: me.seat,
-        tile,
-        reason: "cannot_discard_tile_you_ate_or_passed"
-      });
-      return cb?.({ ok: false, error: "Cannot discard a tile you previously ate or passed on" });
-    }
-
-    // Compute legal discards under the current rules.
-    // If STRICT rules would deadlock the turn (no legal discards), we relax in a controlled way.
-    const strictLegal = computeLegalDiscardTiles({ hand: me.hand, rules: me.rules });
-
-    // Track discards by groupKey for "ăn/đánh cạ" rules.
-    const gk = groupKey(tile);
-    const existing = me.rules.discardedByGroup[gk] ?? [];
-
-    // Vinagames: cấm đánh chắn (cannot discard a tile while still holding its identical pair).
-    const sameCount = me.hand.filter(t => t === tile).length;
-    // Family rules: if you have 3 of the same tile, you can still discard one (leaving a pair).
-    const violatesChanRule = sameCount === 2;
-
-    // Vinagames: If you've ever eaten a cạ, you may not discard both sides of a cạ as trash.
-    const violatesSecondInGroupRule = me.rules.hasEatenCaEver && existing.some(t => t !== tile);
-
-    if (violatesChanRule || violatesSecondInGroupRule) {
-      if (strictLegal.length > 0) {
-        // Not a deadlock: enforce strict rules.
-        if (violatesChanRule) {
-          audit(room, "DISCARD_REJECT", {
-            byPlayerId: playerId,
-            bySeat: me.seat,
-            tile,
-            sameCount,
-            reason: "cannot_discard_chan"
-          });
-          return cb?.({ ok: false, error: "Cannot discard a tile that forms a chắn (pair) in hand" });
-        }
-        if (violatesSecondInGroupRule) {
-          audit(room, "DISCARD_REJECT", {
-            byPlayerId: playerId,
-            bySeat: me.seat,
-            tile,
-            group: gk,
-            existing,
-            reason: "cannot_discard_second_tile_in_group_after_eating_ca"
-          });
-          return cb?.({ ok: false, error: "Cannot discard both sides of a cạ after having eaten a cạ" });
-        }
-      }
-
-      // Deadlock breaker:
-      // 1) allow discarding a chan tile (breaking a pair)
-      const relaxed1 = computeLegalDiscardTiles({ hand: me.hand, rules: me.rules, allowDiscardChan: true });
-      if (relaxed1.includes(tile)) {
-        room.game.logger && logLine(room.game.logger, `DEADLOCK_BREAK allowDiscardChan seat=${me.seat} tile=${tile}`);
-        audit(room, "DEADLOCK_BREAK", { byPlayerId: playerId, bySeat: me.seat, tile, mode: "allow_discard_chan" });
-      } else {
-        // 2) as a last resort, also allow discarding a second distinct tile in a group after having eaten cạ.
-        const relaxed2 = computeLegalDiscardTiles({
-          hand: me.hand,
-          rules: me.rules,
-          allowDiscardChan: true,
-          allowSecondTileInGroupAfterEatingCa: true
-        });
-        if (!relaxed2.includes(tile)) {
-          // Still illegal even after relaxation.
-          if (violatesChanRule) {
-            audit(room, "DISCARD_REJECT", {
-              byPlayerId: playerId,
-              bySeat: me.seat,
-              tile,
-              sameCount,
-              reason: "cannot_discard_chan"
-            });
-            return cb?.({ ok: false, error: "Cannot discard a tile that forms a chắn (pair) in hand" });
-          }
-          if (violatesSecondInGroupRule) {
-            audit(room, "DISCARD_REJECT", {
-              byPlayerId: playerId,
-              bySeat: me.seat,
-              tile,
-              group: gk,
-              existing,
-              reason: "cannot_discard_second_tile_in_group_after_eating_ca"
-            });
-            return cb?.({ ok: false, error: "Cannot discard both sides of a cạ after having eaten a cạ" });
-          }
-        }
-
-        room.game.logger && logLine(room.game.logger, `DEADLOCK_BREAK allowSecondInGroup seat=${me.seat} tile=${tile}`);
-        audit(room, "DEADLOCK_BREAK", { byPlayerId: playerId, bySeat: me.seat, tile, mode: "allow_second_in_group_after_eating_ca" });
-      }
-    }
+    // Family rules: you may discard ANY tile from your hand during the discard step.
+    // (No Vinagames bans like "cannot discard pairs" or "cannot discard 2nd tile in group".)
 
     // Apply discard now that all rules allow it.
     me.hand.splice(idx, 1);
@@ -918,11 +824,7 @@ io.on("connection", (socket) => {
     // Family rules: discarding a tile does NOT permanently ban you from eating that tile later.
     // (cannotEatTiles is reserved for the "bỏ ăn" pass-penalty only.)
 
-    if (!existing.includes(tile)) existing.push(tile);
-    me.rules.discardedByGroup[gk] = existing;
-
-    // If you have discarded both sides of a cạ in a group, later you may not ăn cạ in that group.
-    if (existing.length >= 2 && !me.rules.noCaGroups.includes(gk)) me.rules.noCaGroups.push(gk);
+    // (family rules) no extra discard-history tracking needed here.
 
     room.game.logger && logLine(room.game.logger, `DISCARD seat=${me.seat} tile=${tile}`);
     audit(room, "DISCARD", { byPlayerId: playerId, bySeat: me.seat, tile });
