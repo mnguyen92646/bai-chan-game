@@ -835,8 +835,8 @@ p {
   color: #859173;
 }
 .room-code strong {
-  font: 14px monospace;
-  letter-spacing: 0;
+  font: 700 28px monospace;
+  letter-spacing: 0.14em;
   overflow-wrap: anywhere;
   text-align: center;
   margin: 8px 0;
@@ -1113,6 +1113,13 @@ button:active,
 }
 .mode-label {
   font-size: 13px;
+}
+@media (max-width: 599px) {
+  .game-table .game-header { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; }
+  .game-table .header-right { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; justify-items: end; }
+  .game-table .header-right .language-toggle { grid-column: 1; grid-row: 1; }
+  .game-table .header-right .icon-button { grid-column: 2; grid-row: 1; flex-shrink: 0; }
+  .game-table .mode-label { grid-column: 1 / -1; grid-row: 2; justify-self: start; white-space: nowrap; }
 }
 .table-meta {
   padding: 4px 0 8px;

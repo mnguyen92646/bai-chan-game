@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CircularBoard, GateHistory } from "@/components/CircularBoard";
 import { GameTable, TableTile, TableSheet } from "@/components/GameTable";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/useLanguage";
 import type { PublicGameState, TileId } from "@/lib/game";
 
 export function fixture(count: number, crowded: boolean): PublicGameState {
@@ -15,6 +16,7 @@ export function fixture(count: number, crowded: boolean): PublicGameState {
 }
 /** Deliberately synthetic stress fixture; never a saved or network game. */
 export function TablePreview({ count, crowded, large, draw, won = false }: { count: number; crowded: boolean; large: boolean; draw: boolean; won?: boolean }) {
+  const { t: tr } = useLanguage();
   const [stage, setStage] = useState(won ? 4 : crowded ? 3 : draw ? 0 : 2);
   const sets = [0, 2, 4, count === 4 ? 11 : 9, draw ? 0 : 4][stage];
   const game = fixture(count, true);
@@ -35,7 +37,7 @@ export function TablePreview({ count, crowded, large, draw, won = false }: { cou
     game.players[1].handCount = hand.length;
   }
   const claims = stage === 1 || stage === 3;
-  return <div className={large ? "board-preview-large" : undefined}><GameTable game={game} privateState={{ you: { playerId: "0", seat: 1 }, hand, canRespond: claims, canChiu: claims, canU: claims, passWinForfeits: claims, an: claims ? { eligible: true, canChan: true, mustPreferChan: true, caTiles: [] } : undefined }} seat={1} title="Layout fixture" subtitle={`${count} players · sample cards`} onAction={() => {}} result={stage === 4 ? "Lan declared Ù and won the hand." : undefined} onNew={() => setStage(0)} log={stage === 0 ? [] : Array.from({ length: 18 }, (_, i) => ["Lan drew a tile.", "Minh claimed a tile · Chắn.", "Mai discarded lục · văn."][i % 3])} extra={<button className="text-button" onClick={() => setStage((stage + 1) % 5)}>Preview stage {stage} → next</button>} /></div>;
+  return <div className={large ? "board-preview-large" : undefined}><GameTable game={game} privateState={{ you: { playerId: "0", seat: 1 }, hand, canRespond: claims, canChiu: claims, canU: claims, passWinForfeits: claims, an: claims ? { eligible: true, canChan: true, mustPreferChan: true, caTiles: [] } : undefined }} seat={1} title={tr("Table 123456")} subtitle={`${count} players · sample cards`} onAction={() => {}} result={stage === 4 ? "Lan declared Ù and won the hand." : undefined} onNew={() => setStage(0)} log={stage === 0 ? [] : Array.from({ length: 18 }, (_, i) => ["Lan drew a tile.", "Minh claimed a tile · Chắn.", "Mai discarded lục · văn."][i % 3])} extra={<button className="text-button" onClick={() => setStage((stage + 1) % 5)}>Preview stage {stage} → next</button>} /></div>;
 }
 export function BoardPreview() {
   const [count,setCount]=useState(4),[large,setLarge]=useState(false),[crowded,setCrowded]=useState(false),[focus,setFocus]=useState<string|null>(null),[gate,setGate]=useState<number|null>(null),[player,setPlayer]=useState<number|null>(null);

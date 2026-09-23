@@ -8,6 +8,7 @@ import Link from "next/link";
 import { GameTable } from "@/components/GameTable";
 import { getSocket } from "@/lib/socket";
 import { getToken, setToken } from "@/lib/playerToken";
+import { roomNumber } from "@/lib/roomNumber";
 import type { Action, PrivateGameState, PublicGameState } from "@/lib/game";
 type Room = {
   roomId: string;
@@ -65,6 +66,7 @@ async function copyInviteLink(link: string): Promise<boolean> {
 export default function RoomPage() {
   const { t: tr } = useLanguage();
   const { roomId } = useParams<{ roomId: string }>();
+  const tableNumber = roomNumber(roomId);
   const search = useSearchParams();
   const initialName = search.get("nickname");
   const [name, setName] = useState(initialName ?? "");
@@ -213,7 +215,7 @@ export default function RoomPage() {
           voices={voices}
           privateState={priv}
           seat={priv.you.seat}
-          title={tr(`Table ${roomId}`)}
+          title={tr(`Table ${tableNumber}`)}
           subtitle={
             connected
               ? tr("Connected · Private table")
@@ -240,9 +242,9 @@ export default function RoomPage() {
       <p className="eyebrow">{tr("YOUR PRIVATE TABLE")}</p>
       <h1>{tr("Waiting for players")}</h1>
       <div className="room-code">
-        <span>{tr("PRIVATE INVITE KEY")}</span>
-        <strong>{roomId}</strong>
-        <small>{tr("Anyone with this link can take an open seat. Share it privately.")}</small>
+        <span>{tr("TABLE NUMBER")}</span>
+        <strong>{tableNumber}</strong>
+        <small>{tr("Compare this number with your friends. The invite link is required to join; keep it private.")}</small>
         <button
           className="text-button"
           onClick={async () => {

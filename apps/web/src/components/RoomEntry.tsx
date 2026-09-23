@@ -18,7 +18,9 @@ export function RoomEntry({ create }: { create: boolean }) {
     const room = /^https?:\/\//i.test(input)
       ? new URL(input).pathname.match(/^\/room\/([^/]+)\/?$/)?.[1]
       : input;
-    if (!room || !/^[a-zA-Z0-9_-]{1,64}$/.test(room)) throw new Error("Invalid invite");
+    const privateInvite = /^room_[A-Za-z0-9_-]{22}$/.test(room ?? "");
+    const localCode = process.env.NEXT_PUBLIC_TABLE_TRANSPORT !== "worker" && /^\d{6}$/.test(room ?? "");
+    if (!room || (!privateInvite && !localCode)) throw new Error("Invalid invite");
     return room;
   }
   async function submit(e: React.FormEvent) {
@@ -57,7 +59,7 @@ export function RoomEntry({ create }: { create: boolean }) {
       <p>
         {create
           ? tr("Create a private table, then share its invite link with your players. Two or more people can play with bots filling empty seats.")
-          : tr("Paste the private invite link or key shared by your host.")}
+          : tr("Paste the private invite link or key shared by your host. The six-digit table number is only for checking that you are in the same room.")}
       </p>
       <form onSubmit={submit}>
         <label htmlFor="name">{tr("Your name")}</label>

@@ -11,7 +11,7 @@ Trò chơi web này ghi lại một lối chơi Bài Chắn 120 quân của gia 
 ## Chế độ chơi
 
 - **Luyện tập:** chơi ngay với ba máy; ván hiện tại được lưu trong trình duyệt.
-- **Tạo phòng:** mở phòng riêng bốn hoặc năm ghế. Mời người khác bằng liên kết dài; ai có liên kết có thể vào ghế còn trống. Có thể dùng máy để lấp ghế trống sau khi có ít nhất hai người kết nối.
+- **Tạo phòng:** mở phòng riêng bốn hoặc năm ghế. Mời người khác bằng liên kết mời; ai có liên kết có thể vào ghế còn trống. Số bàn gồm sáu chữ số hiện ở phòng chờ và trên bàn giúp mọi người xác nhận đang ở cùng phòng, nhưng chỉ có số bàn thì không thể vào. Có thể dùng máy để lấp ghế trống sau khi có ít nhất hai người kết nối.
 - **Vào lại:** làm mới trang vẫn nhận lại ghế trên thiết bị đó bằng mã riêng của phòng. Người chơi mất kết nối giữ ghế để quay lại; người mới chỉ thay máy giữa các ván.
 
 ## Chạy trên máy của bạn

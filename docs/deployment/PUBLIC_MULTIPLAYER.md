@@ -11,6 +11,7 @@ Do not publish a development preview or expose a developer's local machine direc
 ## Room privacy
 
 - A new room uses a 128-bit random invitation ID. Joining an unknown ID never creates a room. Only people with the invitation link can take an open seat.
+- The UI derives a six-digit table number from that invitation ID so players can compare screens. This number is only a display reference; joining still requires the full invitation link or key. Different rooms can rarely share the same display number.
 - Treat the invitation link as a bearer secret. A forwarded or leaked link lets its holder take an open seat. Host approval is out of scope.
 - Rejoin requires the existing player token. Never broadcast private hands to other room members or put them in public logs.
 - The public Worker has no default shared room or reveal-hands action. Rejoin tokens are generated with 256 random bits and stored in the room's Durable Object; they are not signed bearer tokens.
