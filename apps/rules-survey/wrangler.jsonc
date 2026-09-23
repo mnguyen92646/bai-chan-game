@@ -1,0 +1,28 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "bai-chan-rules",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-23",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 0.01 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
+  },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "RULES_DB",
+      "database_name": "bai-chan-public-rules",
+      "database_id": "f15d642a-d12c-4086-8ffd-08b5e08a294a",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "ratelimits": [
+    { "name": "SUBMIT_LIMIT", "namespace_id": "42003", "simple": { "limit": 3, "period": 60 } }
+  ]
+}

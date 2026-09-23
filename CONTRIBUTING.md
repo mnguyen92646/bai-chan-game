@@ -6,7 +6,7 @@ This project implements a 120-card family variant. Other families may play diffe
 
 ## Share a ruleset
 
-Use the [family rules questionnaire](https://github.com/mnguyen92646/bai-chan-game/issues/new?template=family-rules.yml). Issues are public, so do not include private names, contact details, or recordings without permission. A complete example of a deal, turn, claim, or winning hand is particularly useful.
+Use the [family rules questionnaire](https://bai-chan-rules.white-violet-3211.workers.dev/?lang=en). Questionnaire submissions are private and need no GitHub account. Please leave out contact details; credit names only with the respondent’s permission. A complete example of a deal, turn, claim, or winning hand is particularly useful.
 
 ## Improve the game
 

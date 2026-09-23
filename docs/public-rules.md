@@ -39,4 +39,4 @@ Wins outrank Chíu; competing wins follow seat order from the active gate. Retur
 
 The game currently prefers Chắn over Cạ, bans an exact-face Cạ after a pass while allowing a later Chắn, leaves no wall reserve, sends repeated Chíu returns to the interrupted gate, and completes the final turn. The family is still checking those choices, a reclaim deadline, the opener after a drawn hand, scoring, and penalties. Scoring and penalties are not implemented. Rule changes apply to newly dealt hands.
 
-[Share your family's rules](https://github.com/mnguyen92646/bai-chan-game/issues/new?template=family-rules.yml) · [Read the research page](https://michaelnguyen.net/baichan.html)
+[Share your family's rules](https://bai-chan-rules.white-violet-3211.workers.dev/?lang=en) · [Read the research page](https://michaelnguyen.net/baichan.html)

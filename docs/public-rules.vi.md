@@ -39,4 +39,4 @@ Phải ghép hết quân thành đôi và đạt số Chắn tối thiểu trong
 
 Trò chơi hiện ưu tiên Chắn trước Cạ; sau khi bỏ Cạ, cấm ăn Cạ cùng mặt nhưng vẫn cho ăn Chắn; không để quân dự trữ trong nọc; Chíu liên tiếp trả về cửa bị ngắt; và hoàn tất lượt cuối. Gia đình còn đang kiểm tra các điểm ấy, hạn nhận lại quân vừa bỏ, người mở sau ván hòa, cước và báo/phạt. Chưa tính cước hoặc phạt. Luật mới chỉ áp dụng từ ván chia kế tiếp.
 
-[Chia sẻ luật gia đình bạn](https://github.com/mnguyen92646/bai-chan-game/issues/new?template=family-rules-vi.yml) · [Đọc trang tư liệu](https://michaelnguyen.net/baichan-vi.html)
+[Chia sẻ luật gia đình bạn](https://bai-chan-rules.white-violet-3211.workers.dev/?lang=vi) · [Đọc trang tư liệu](https://michaelnguyen.net/baichan-vi.html)
