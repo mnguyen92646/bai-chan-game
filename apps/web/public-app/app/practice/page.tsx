@@ -1,0 +1,1 @@
+../../../src/app/practice/page.tsx

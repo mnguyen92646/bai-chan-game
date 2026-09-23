@@ -1,0 +1,1 @@
+../../../../src/app/room/[roomId]/page.tsx

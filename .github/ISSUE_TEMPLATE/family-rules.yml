@@ -1,0 +1,64 @@
+name: Share your family's rules
+description: Document a Chắn, Tổ Tôm, or related family ruleset for comparison.
+title: "Family rules: "
+labels: [rules-research]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for sharing. Issues are public: leave out private names, contact details, and photos unless you want them published. Firsthand memories, uncertain details, and different variants are all useful. Please distinguish what you have played from rules you found online.
+  - type: input
+    id: game-name
+    attributes:
+      label: What does your family call the game?
+      placeholder: Bài Chắn, Chắn, Tổ Tôm, or another name
+    validations:
+      required: true
+  - type: dropdown
+    id: deck-size
+    attributes:
+      label: How many cards are in the deck?
+      options:
+        - 120 cards
+        - 100 cards
+        - Another number
+        - I do not know
+    validations:
+      required: true
+  - type: textarea
+    id: deck-details
+    attributes:
+      label: Which cards are included or removed?
+      description: In particular, are Nhất, Thang, Lão, and Chi Chi used?
+  - type: textarea
+    id: players-and-deal
+    attributes:
+      label: Players and deal
+      description: How many people play, how many cards does each receive, and how many remain in the stock?
+    validations:
+      required: true
+  - type: textarea
+    id: turn-and-claims
+    attributes:
+      label: Turns, draws, and claims
+      description: What happens on Bốc, Đánh, Ăn, Chíu, Bỏ, or a returned card? Which cards are shown to everyone?
+  - type: textarea
+    id: winning-and-scoring
+    attributes:
+      label: Winning and scoring
+      description: Describe a winning hand, minimum Chắn, special calls, points, and penalties. A concrete example is especially helpful.
+  - type: textarea
+    id: source
+    attributes:
+      label: How do you know these rules?
+      description: Your own play, a relative's explanation, a written source, or an online game? Region or generation is welcome if you are comfortable sharing it.
+  - type: dropdown
+    id: attribution
+    attributes:
+      label: May we credit your GitHub username when summarizing these rules?
+      options:
+        - Yes
+        - No, summarize anonymously
+        - Ask me first
+    validations:
+      required: true

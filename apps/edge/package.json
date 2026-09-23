@@ -1,0 +1,19 @@
+{
+  "name": "@bai-chan/edge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --port 3102 --var WEB_ORIGINS:http://localhost:3100,http://127.0.0.1:3100,http://localhost:3103,http://127.0.0.1:3103",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "smoke": "node smoke.mjs",
+    "dry-run": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260923.1",
+    "typescript": "^5.5.4",
+    "wrangler": "4.136.3"
+  }
+}

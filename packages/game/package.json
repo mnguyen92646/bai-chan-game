@@ -1,0 +1,6 @@
+{
+  "name": "@bai-chan/game",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "tsx --test test/*.test.ts" }
+}

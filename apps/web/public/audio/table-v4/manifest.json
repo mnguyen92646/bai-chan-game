@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "source": "table-v3",
+  "processing": "Pitch-preserving atempo=0.6 on win only; Chíu followed by 180ms pause and lengthened win. No voice/phoneme regeneration.",
+  "clips": {
+    "male/win": {
+      "duration": 1.320272,
+      "sha256": "0a1f4bac063fc65429dd49b7b054a4155a0fc57fbf9a18c5b6398a9a15d75627",
+      "phrase": "Ù! Ù rồi!"
+    },
+    "male/chiu-win": {
+      "duration": 2.381633,
+      "sha256": "0cac476260f9e2c3633cd021ec1a3109791b599048b920b607ae46a69bdc2749",
+      "phrase": "Chíu! Ù! Ù rồi!"
+    },
+    "female/win": {
+      "duration": 1.179841,
+      "sha256": "882fc04185e74a5b8de7750401edbf676067735325acec94b42dd6e00b6e9cac",
+      "phrase": "Ù! Ù rồi!"
+    },
+    "female/chiu-win": {
+      "duration": 2.173968,
+      "sha256": "68f66ee76ad5e3cd9683e4d1371b5ad8e5634e4de500dd7150af5d1622404ff6",
+      "phrase": "Chíu! Ù! Ù rồi!"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 node_modules
 dist
 .next
+.wrangler/
 .env
 .env.*
 .DS_Store
@@ -8,3 +9,21 @@ dist
 # runtime logs
 apps/server/logs/
 apps/server/bots-*.log
+
+# Isolated production verification build
+.next-verify
+
+# Family questionnaire credentials, responses and recordings
+/data/rules-survey/
+/artifacts/
+
+# Private family questionnaire implementation and research notes
+/apps/web/src/app/family-rules/
+/apps/web/src/app/api/rules-survey/
+/apps/web/src/components/Survey*.tsx
+/apps/web/src/lib/survey*.ts
+/scripts/*survey*
+/docs/rules/
+
+# Host-specific proxy configuration contains invitation credentials
+/Caddyfile

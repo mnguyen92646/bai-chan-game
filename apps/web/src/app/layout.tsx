@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { LanguageDocument } from "@/components/LanguageDocument";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,9 +13,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#173f33",
+};
+
 export const metadata: Metadata = {
   title: "Bài Chắn",
-  description: "Mobile-friendly Bài Chắn for family play",
+  description: "Play Bài Chắn with bots or in a private room",
 };
 
 export default function RootLayout({
@@ -23,10 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <LanguageDocument className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
-      </body>
-    </html>
+      </LanguageDocument>
   );
 }

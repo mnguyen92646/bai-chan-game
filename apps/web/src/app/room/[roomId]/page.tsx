@@ -1,736 +1,337 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
+import { useLanguage } from "@/lib/useLanguage";
+import { recordGameAction } from "@/lib/gameTelemetry";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { defaultLocale, type Locale } from "@/i18n/config";
-import { getMessages } from "@/i18n/getMessages";
-import { getStoredLocale } from "@/lib/locale";
+import Link from "next/link";
+import { GameTable } from "@/components/GameTable";
 import { getSocket } from "@/lib/socket";
 import { getToken, setToken } from "@/lib/playerToken";
-import { SortableHand } from "@/components/SortableHand";
-import { FanHand } from "@/components/FanHand";
-import { LanguageToggle } from "@/components/LanguageToggle";
-import { TableBoard } from "@/components/TableBoard";
-
-type PublicGame = {
-  phase: "lobby" | "playing";
-  dealerSeat: number;
-  turnSeat: number;
-  awaiting: "draw" | "discard";
-  wallCount: number;
-  lastDiscard: null | { tile: string; fromSeat: number };
-  revealHands?: boolean;
-  players: Array<{
-    playerId: string;
-    seat: number;
-    nickname: string;
-    connected: boolean;
-    handCount: number;
-    hand?: string[];
-    discards: string[];
-    melds: Array<
-      | { type: "chiu"; tile: string }
-      | { type: "an"; kind: "chan" | "ca"; tiles: [string, string]; fromSeat: number }
-    >;
-  }>;
-};
-
-type RoomState = {
+import type { Action, PrivateGameState, PublicGameState } from "@/lib/game";
+type Room = {
   roomId: string;
   phase: "lobby" | "playing";
   hostPlayerId: string | null;
-  players: Array<{ playerId: string; seat: number; nickname: string; connected: boolean }>;
-  publicGame: PublicGame | null;
+  players: {
+    playerId: string;
+    nickname: string;
+    seat: number;
+    connected: boolean;
+    isBot?: boolean;
+  }[];
+  botOptions?: { fillBots: boolean; playerCount: 4 | 5 };
+  publicGame: PublicGameState | null;
+};
+type Reply = {
+  ok: boolean;
+  error?: string;
+  token?: string;
+  playerId?: string;
+  seat?: number;
 };
 
-type PrivateState = {
-  hand: string[];
-  lastDrawnTile?: string;
-  canU?: boolean;
-  canAn?: boolean;
-  an?:
-    | {
-        eligible: false;
-        reason: string;
-      }
-    | {
-        eligible: true;
-        canChan: boolean;
-        caTiles: string[];
-        mustPreferChan: boolean;
-      };
-};
+async function copyInviteLink(link: string): Promise<boolean> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(link);
+      return true;
+    } catch {
+      // Clipboard API permissions vary; try selection-based copying below.
+    }
+  }
 
+  // The HTTP Tailscale preview is not a secure browser context, so the
+  // Clipboard API is unavailable there. This remains usable on that preview.
+  const field = document.createElement("textarea");
+  field.value = link;
+  field.setAttribute("readonly", "");
+  field.style.position = "fixed";
+  field.style.top = "0";
+  field.style.left = "0";
+  field.style.opacity = "0";
+  document.body.appendChild(field);
+  field.focus();
+  field.select();
+  field.setSelectionRange(0, link.length);
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    field.remove();
+  }
+}
 
 export default function RoomPage() {
-  const params = useParams<{ roomId: string }>();
+  const { t: tr } = useLanguage();
+  const { roomId } = useParams<{ roomId: string }>();
   const search = useSearchParams();
-  const roomId = params.roomId;
-
-  const [locale, setLocale] = useState<Locale>(defaultLocale);
-  const [messages, setMessages] = useState<any>(null);
-
-  const [nickname, setNickname] = useState("");
-  const [status, setStatus] = useState<string>("connecting");
-  const [seat, setSeat] = useState<number | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
-  const [isHost, setIsHost] = useState<boolean>(false);
-  const [room, setRoom] = useState<RoomState | null>(null);
-
+  const initialName = search.get("nickname");
+  const [name, setName] = useState(initialName ?? "");
+  const [room, setRoom] = useState<Room | null>(null);
+  const [priv, setPriv] = useState<PrivateGameState | null>(null);
+  const [id, setId] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<string>();
+  const [log, setLog] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [manualLink, setManualLink] = useState("");
+  const manualLinkInput = useRef<HTMLInputElement>(null);
+  const [fillBots, setFillBots] = useState(true);
+  const [tableSize, setTableSize] = useState<4 | 5>(4);
+  const joiningName = useRef(initialName ?? "");
   useEffect(() => {
-    const l = getStoredLocale();
-    setLocale(l);
-    getMessages(l).then(setMessages);
-
-    const { guessDeviceName } = require("@/lib/deviceName") as typeof import("@/lib/deviceName");
-    const nick = search.get("nickname") ?? guessDeviceName();
-    setNickname(nick);
-  }, [search]);
-
-  const t = useMemo(() => {
-    const m = messages ?? {};
-    return (key: string, vars?: Record<string, any>) => {
-      let s = m[key] ?? key;
-      if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
-      return s;
-    };
-  }, [messages]);
-
-  const [hand, setHand] = useState<string[]>([]);
-  const [selected, setSelected] = useState<string>("");
-  const [lastDrawnTile, setLastDrawnTile] = useState<string>("");
-  const [canU, setCanU] = useState<boolean>(false);
-  const [canAn, setCanAn] = useState<boolean>(false);
-  const [an, setAn] = useState<PrivateState["an"] | null>(null);
-  const [selectedCaTile, setSelectedCaTile] = useState<string>("");
-  const [revealHands, setRevealHands] = useState<boolean>(false);
-  const [focusDiscard, setFocusDiscard] = useState<string>("");
-  const [logsOpen, setLogsOpen] = useState<boolean>(false);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [notice, setNotice] = useState<string>("");
-
+    if (manualLink) {
+      manualLinkInput.current?.focus();
+      manualLinkInput.current?.select();
+    }
+  }, [manualLink]);
   useEffect(() => {
     const socket = getSocket();
-
-    function onRoomState(state: RoomState) {
-      setRoom(state);
-      if (typeof state?.publicGame?.revealHands === "boolean") {
-        setRevealHands(Boolean(state.publicGame.revealHands));
-      }
-    }
-
-    function onPrivateState(state: any) {
-      const ps = state as PrivateState;
-      if (Array.isArray(ps.hand)) setHand(ps.hand);
-      if (ps.lastDrawnTile) setLastDrawnTile(ps.lastDrawnTile);
-      if (typeof ps.canU === "boolean") setCanU(ps.canU);
-      if (typeof ps.canAn === "boolean") setCanAn(ps.canAn);
-      if (ps.an) {
-        setAn(ps.an);
-        if (ps.an.eligible) {
-          const tiles = ps.an.caTiles ?? [];
-          setSelectedCaTile((prev) => (prev && tiles.includes(prev) ? prev : (tiles[0] ?? "")));
-        } else {
-          setSelectedCaTile("");
-        }
-      } else {
-        setAn(null);
-        setSelectedCaTile("");
-      }
-    }
-
-    function onLog(payload: any) {
-      const lines = (payload?.lines ?? []) as string[];
-      if (Array.isArray(lines)) setLogs(lines.slice(-200));
-    }
-
-    function onRestarted(payload: any) {
-      const bySeat = payload?.bySeat;
-      const byNickname = payload?.byNickname;
-      const who = byNickname ? `${byNickname}${bySeat ? ` (Seat ${bySeat})` : ""}` : (bySeat ? `Seat ${bySeat}` : "Host");
-      setNotice(`${t("game.restartedNotice")}: ${who}`);
-      setTimeout(() => setNotice(""), 8000);
-    }
-
-    function onRoomReset(payload: any) {
-      const bySeat = payload?.bySeat;
-      const byNickname = payload?.byNickname;
-      const who = byNickname ? `${byNickname}${bySeat ? ` (Seat ${bySeat})` : ""}` : (bySeat ? `Seat ${bySeat}` : "Host");
-      setNotice(`${t("room.resetNotice")}: ${who}`);
-      setTimeout(() => setNotice(""), 8000);
-    }
-
-    socket.on("connect", () => setStatus("connected"));
-    socket.on("disconnect", () => setStatus("disconnected"));
-    socket.on("room:state", onRoomState);
-    socket.on("game:private", onPrivateState);
-    socket.on("game:log", onLog);
-    socket.on("game:restarted", onRestarted);
-    socket.on("room:reset", onRoomReset);
-
-    return () => {
-      socket.off("room:state", onRoomState);
-      socket.off("game:private", onPrivateState);
-      socket.off("game:log", onLog);
-      socket.off("game:restarted", onRestarted);
-      socket.off("room:reset", onRoomReset);
-    };
-  }, []);
-
-  async function join() {
-    const socket = getSocket();
-    const token = getToken(roomId);
-    const nick = nickname || "Player";
-
-    socket.emit(
-      "room:join",
-      { roomId, nickname: nick, token: token || undefined },
-      (resp: any) => {
-        if (!resp?.ok) {
-          alert(resp?.error ?? "Join failed");
-          return;
-        }
-        if (resp.token) setToken(roomId, resp.token);
-        setSeat(resp.seat ?? null);
-        setPlayerId(resp.playerId ?? null);
-        setIsHost(Boolean(resp.isHost));
-      }
-    );
-  }
-
-  async function startGame() {
-    const socket = getSocket();
-    socket.emit("game:start", {}, (resp: any) => {
-      if (!resp?.ok) alert(resp?.error ?? "Start failed");
-    });
-  }
-
-  async function restartGame() {
-    if (!isHost) return;
-    if (!confirm(t("game.restartConfirm"))) return;
-    const socket = getSocket();
-    socket.emit("game:restart", {}, (resp: any) => {
-      if (!resp?.ok) alert(resp?.error ?? "Restart failed");
-    });
-  }
-
-  async function resetRoom() {
-    if (!isHost) return;
-    if (!confirm(t("room.resetConfirm"))) return;
-    const socket = getSocket();
-    socket.emit("room:reset", {}, (resp: any) => {
-      if (!resp?.ok) alert(resp?.error ?? "Reset failed");
-      if (resp?.token) setToken(roomId, resp.token);
-      if (resp?.seat) setSeat(resp.seat);
-      if (resp?.playerId) setPlayerId(resp.playerId);
-      setIsHost(true);
-    });
-  }
-
-  function discard() {
-    if (!selected) return;
-    const socket = getSocket();
-    socket.emit("game:discard", { tile: selected }, (resp: any) => {
-      if (!resp?.ok) alert(resp?.error ?? "Discard failed");
-      else setSelected("");
-    });
-  }
-
-  if (!messages) return <div className="p-4">Loading…</div>;
-
-  const inviteLink = typeof window === "undefined" ? "" : window.location.origin + `/room/${roomId}`;
-
-  const hostConnected = Boolean(room?.hostPlayerId && room?.players?.find((p: any) => p.playerId === room.hostPlayerId)?.connected);
-  const canAdmin = Boolean(isHost || (playerId && !hostConnected));
-
-  return (
-    <main className="min-h-screen p-4 w-full mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t("room.title", { roomId })}</h1>
-        <div className="flex items-center gap-2">
-          <LanguageToggle compact />
-          <div className="text-xs text-gray-600">{status}</div>
-        </div>
-      </div>
-
-      {notice ? (
-        <div className="mt-3 text-sm border rounded-md px-3 py-2 bg-amber-50 text-amber-900 border-amber-200">
-          {notice}
-        </div>
-      ) : null}
-
-      <div className="mt-3 text-sm text-gray-700">
-        <div><span className="font-medium">Room ID:</span> {roomId}</div>
-        <div className="mt-2 flex gap-2">
-          <input data-room-link="1" className="flex-1 border rounded-md px-3 py-2 text-xs" readOnly value={inviteLink} />
-          <button
-            className="border rounded-md px-3"
-            onClick={async () => {
-              // iOS Safari / in-app browsers can block navigator.clipboard.
-              // Fallback: select the input text and attempt execCommand('copy').
-              try {
-                if (navigator.clipboard?.writeText) {
-                  await navigator.clipboard.writeText(inviteLink);
-                  setNotice("Copied link to clipboard");
-                  setTimeout(() => setNotice(""), 2500);
-                  return;
-                }
-              } catch {
-                // continue to fallback
-              }
-
-              try {
-                const el = document.querySelector<HTMLInputElement>("input[data-room-link='1']");
-                if (el) {
-                  el.focus();
-                  el.select();
-                  document.execCommand("copy");
-                  setNotice("Copied link to clipboard");
-                  setTimeout(() => setNotice(""), 2500);
-                  return;
-                }
-              } catch {
-                // ignore
-              }
-
-              alert(inviteLink);
-            }}
-          >
-            Copy
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <label className="block text-sm">{t("home.nickname")}</label>
-        <input
-          className="w-full border rounded-md px-3 py-2"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          placeholder={t("home.nickname")}
-        />
-        <button className="mt-3 w-full bg-black text-white rounded-md py-3" onClick={join}>
-          Join
-        </button>
-      </div>
-
-      <div className="mt-4 space-y-2">
-        {room?.phase === "playing" ? (
-          <div className="space-y-2">
-            <div className="text-sm text-green-700 font-medium">Game started</div>
-            {canAdmin ? (
-              <div className="space-y-2">
-                <button className="w-full border rounded-md py-3" onClick={restartGame}>
-                  {t("game.restart")}
-                </button>
-                <button className="w-full border rounded-md py-3" onClick={resetRoom}>
-                  {t("room.reset")}
-                </button>
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <button
-            className="w-full border rounded-md py-3 disabled:opacity-50"
-            disabled={!canAdmin}
-            onClick={startGame}
-          >
-            Start game
-          </button>
-        )}
-        {!canAdmin && room?.phase !== "playing" ? (
-          <div className="text-xs text-gray-500">Only the room host can start (unless host disconnected).</div>
-        ) : null}
-
-        {/* When playing, these belong on the board, not in a separate panel */}
-        {room?.publicGame?.phase === "playing" ? null : null}
-
-        {room?.publicGame?.phase === "playing" ? (
-          <div className="mt-4">
-            <TableBoard
-              publicGame={room.publicGame}
-              youSeat={seat}
-              focusDiscard={focusDiscard}
-              setFocusDiscard={setFocusDiscard}
-            />
-
-            {/* Quick actions row */}
-            <div className="mt-3 flex flex-wrap gap-2 items-center justify-end">
-              <button
-                className={`rounded-md px-3 py-2 text-sm font-semibold transition shadow-sm border ${(() => {
-                  const d = room?.publicGame?.lastDiscard?.tile;
-                  if (!d) return "bg-zinc-100 text-zinc-400 border-zinc-200";
-                  const exact = hand.filter(t => t === d).length;
-                  const eligible = exact >= 3;
-                  return eligible
-                    ? "bg-emerald-200 text-emerald-900 border-emerald-300"
-                    : "bg-emerald-50 text-emerald-300 border-emerald-100";
-                })()}`}
-                disabled={(() => {
-                  const d = room?.publicGame?.lastDiscard?.tile;
-                  if (!d) return true;
-                  const exact = hand.filter(t => t === d).length;
-                  return exact < 3;
-                })()}
-                onClick={() => {
-                  const socket = getSocket();
-                  socket.emit("game:chiu", {}, (resp: any) => {
-                    if (!resp?.ok) alert(resp?.error ?? "Chiu failed");
-                  });
-                }}
-              >
-                {t("table.chiu")}
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Seat list is redundant during play; the board shows seat info */}
-      {room?.publicGame?.phase === "playing" ? null : (
-        <div className="mt-6 space-y-2">
-          {(room?.players ?? []).length === 0 ? (
-            <div className="text-sm text-gray-600">No players yet.</div>
-          ) : (
-            room?.players.map((p) => {
-              const gp = room?.publicGame?.players?.find((x) => x.seat === p.seat);
-              return (
-                <div key={p.seat} className="border rounded-md p-3">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="font-medium">
-                        {t("room.seat", { seat: p.seat })} {seat === p.seat ? `(${t("room.you")})` : ""}
-                      </div>
-                      <div className="text-sm text-gray-700">{p.nickname}</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`text-sm ${p.connected ? "text-green-700" : "text-gray-500"}`}>
-                        {p.connected ? t("room.connected") : t("room.disconnected")}
-                      </div>
-                    </div>
-                  </div>
-
-                  {room?.publicGame?.revealHands && gp?.hand ? (
-                    <div className="mt-2">
-                      <div className="text-xs text-gray-600 mb-1">Hand ({gp.hand.length})</div>
-                      <div className="flex gap-1 flex-wrap">
-                        {gp.hand.map((tid, idx) => (
-                          <div key={idx} className="w-7 h-28 sm:w-8 sm:h-32 md:w-10 md:h-40 border rounded overflow-hidden bg-white">
-                            <img src={require("@/lib/tileSrc").tilePngSrc(tid)} className="w-full h-full object-fill" alt={tid} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+    const savedName = initialName || localStorage.getItem("baichan-name") || "";
+    joiningName.current = savedName;
+    function join() {
+      setConnected(true);
+      setError("");
+      if (!joiningName.current) return;
+      socket
+        .timeout(8000)
+        .emit(
+          "room:join",
+          {
+            roomId,
+            nickname: joiningName.current,
+            token: getToken(roomId) || undefined,
+          },
+          (err: Error | null, r: Reply) => {
+            if (err || !r?.ok) {
+              setError(
+                err
+                  ? "Joining timed out. Check your connection and try again."
+                  : String(r.error),
               );
-            })
-          )}
-        </div>
-      )}
-
-      {room?.publicGame?.phase === "playing" ? (() => {
-        const myTurn = room.publicGame.turnSeat === seat;
-        const canDraw = myTurn && room.publicGame.awaiting === "draw";
-        const canDiscard = myTurn && room.publicGame.awaiting === "discard";
-        const mustAn = false;
-
-        function tileKey(t: string) {
-          // Stable ordering key for tiles.
-          // chi + yeu tiles first, then rank 1-9, then suit.
-          if (t === "chi") return `0_00`;
-          if (t === "lao") return `0_01`;
-          if (t === "thang") return `0_02`;
-          const m = t.match(/^(\d)_(van|vanh|sach)$/);
-          if (!m) return `9_99_${t}`;
-          const r = Number(m[1]);
-          const suit = m[2];
-          const suitOrder = suit === "van" ? 0 : suit === "vanh" ? 1 : 2;
-          return `1_${String(r).padStart(2, "0")}_${suitOrder}`;
-        }
-
-        function groupKeyForFanSort(t: string) {
-          // Grouping key for cạ-like adjacency: same rank-group, plus special 6 group.
-          if (t === "chi" || t === "lao" || t === "thang") return "SPECIAL6";
-          const m = t.match(/^(\d)_(van|vanh|sach)$/);
-          if (!m) return `OTHER:${t}`;
-          const r = Number(m[1]);
-          if (r === 1) return "SPECIAL6";
-          return `RANK:${r}`;
-        }
-
-        function sortHandFanStyle(hand: string[]) {
-          // Fan-style heuristic:
-          // 1) pairs/triples/quads first (tiles with count>=2)
-          // 2) then cạ candidates (same groupKey with at least 2 distinct tiles)
-          // 3) then singles
-          const counts = new Map<string, number>();
-          for (const t of hand) counts.set(t, (counts.get(t) ?? 0) + 1);
-
-          const byGroup = new Map<string, Set<string>>();
-          for (const t of hand) {
-            const gk = groupKeyForFanSort(t);
-            if (!byGroup.has(gk)) byGroup.set(gk, new Set());
-            byGroup.get(gk)!.add(t);
-          }
-
-          function bucket(t: string) {
-            if ((counts.get(t) ?? 0) >= 2) return 0; // pairs first
-            const gk = groupKeyForFanSort(t);
-            const distinct = byGroup.get(gk);
-            if (distinct && distinct.size >= 2) return 1; // cạ candidates next
-            return 2;
-          }
-
-          return hand
-            .slice()
-            .sort((a, b) => {
-              const ba = bucket(a);
-              const bb = bucket(b);
-              if (ba !== bb) return ba - bb;
-
-              const ga = groupKeyForFanSort(a);
-              const gb = groupKeyForFanSort(b);
-              if (ga !== gb) return ga.localeCompare(gb);
-
-              return tileKey(a).localeCompare(tileKey(b));
-            });
-        }
-
-        return (
-          <div className="mt-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-medium">Your hand ({hand.length})</div>
-              <div className="text-xs text-gray-600">
-                {myTurn ? (mustAn ? t("table.mustAn") : "Your turn") : `Waiting for seat ${room.publicGame.turnSeat}`}
-              </div>
-            </div>
-
-            <div className="mt-2">
-              {/* New layout: fan hand like typical Chắn UIs */}
-              <FanHand
-                tiles={hand}
-                setTiles={(next) => setHand(next)}
-                selected={selected}
-                onSelect={(t) => {
-                  setSelected((cur) => (cur === t ? "" : t));
-                  setFocusDiscard(t);
-                }}
-                highlightLike={focusDiscard}
-              />
-
-              {/* Keep sortable hand available for debugging */}
-              <div className="hidden">
-                <SortableHand
-                  hand={hand}
-                  setHand={setHand}
-                  selected={selected}
-                  setSelected={setSelected}
-                  lastDrawnTile={lastDrawnTile}
-                  highlightLike={focusDiscard}
-                />
-              </div>
-            </div>
-
-            <div className="text-xs text-gray-600 mt-2">
-              {(() => {
-                const { tileInfo } = require("@/lib/tileMeta") as typeof import("@/lib/tileMeta");
-                const sel = selected ? tileInfo(selected) : null;
-                const drawn = lastDrawnTile ? tileInfo(lastDrawnTile) : null;
-                return (
-                  <div className="space-y-1">
-                    <div>
-                      <span className="font-medium">Selected:</span>{" "}
-                      {sel ? (
-                        <span className="text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded">{sel.labelEn} / {sel.labelVi}</span>
-                      ) : (
-                        "(none)"
-                      )}
-                      {sel ? <span className="text-gray-500 ml-2">[{sel.id}]</span> : null}
-                    </div>
-                    <div>
-                      <span className="font-medium">Last drawn:</span>{" "}
-                      {drawn ? (
-                        <span className="text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded">{drawn.labelEn} / {drawn.labelVi}</span>
-                      ) : (
-                        "(none)"
-                      )}
-                      {drawn ? <span className="text-gray-500 ml-2">[{drawn.id}]</span> : null}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Controls BELOW the hand (mobile-friendly) */}
-            <div className="mt-3 flex gap-2">
-              <button
-                className="flex-1 rounded-md py-3 font-semibold transition shadow-sm bg-emerald-600 text-white border border-emerald-700 active:scale-[0.99]"
-                onClick={() => {
-                  setHand((prev) => sortHandFanStyle(prev));
-                }}
-              >
-                Auto-sort
-              </button>
-
-              {(() => {
-                const canAnChan = Boolean(an && (an as any).eligible && (an as any).canChan);
-                const caTiles = (an && (an as any).eligible ? ((an as any).caTiles as string[]) : []) ?? [];
-                const mustPreferChan = Boolean(an && (an as any).eligible && (an as any).mustPreferChan);
-                const canAnCa = caTiles.length > 0 && !mustPreferChan;
-
-                return (
-                  <>
-                    <button
-                      className={`flex-1 rounded-md py-3 font-semibold transition shadow-sm border active:scale-[0.99] ${
-                        canAnChan
-                          ? "bg-orange-600 text-white border-orange-700"
-                          : "bg-orange-50 text-orange-200 border-orange-100"
-                      }`}
-                      disabled={!canAnChan}
-                      onClick={() => {
-                        const socket = getSocket();
-                        socket.emit("game:an", { kind: "chan" }, (resp: any) => {
-                          if (!resp?.ok) alert(resp?.error ?? "Ăn chắn failed");
-                        });
-                      }}
-                      title={mustPreferChan ? "Ưu tiên ăn chắn" : undefined}
-                    >
-                      Ăn chắn
-                    </button>
-
-                    <div className="flex-1 flex flex-col gap-1">
-                      {caTiles.length > 1 ? (
-                        <select
-                          className="border rounded-md px-2 py-1 text-xs"
-                          value={selectedCaTile}
-                          onChange={(e) => setSelectedCaTile(e.target.value)}
-                          disabled={!canAnCa}
-                        >
-                          {caTiles.map((id) => (
-                            <option key={id} value={id}>
-                              {id}
-                            </option>
-                          ))}
-                        </select>
-                      ) : null}
-
-                      <button
-                        className={`w-full rounded-md py-3 font-semibold transition shadow-sm border active:scale-[0.99] ${
-                          canAnCa
-                            ? "bg-orange-500 text-white border-orange-600"
-                            : mustPreferChan
-                              ? "bg-orange-50 text-orange-200 border-orange-100"
-                              : "bg-orange-50 text-orange-200 border-orange-100"
-                        }`}
-                        disabled={!canAnCa}
-                        onClick={() => {
-                          const socket = getSocket();
-                          socket.emit(
-                            "game:an",
-                            { kind: "ca", withTile: selectedCaTile || caTiles[0] },
-                            (resp: any) => {
-                              if (!resp?.ok) alert(resp?.error ?? "Ăn cạ failed");
-                            }
-                          );
-                        }}
-                        title={mustPreferChan ? "Không được ăn cạ khi có chắn" : undefined}
-                      >
-                        Ăn cạ
-                      </button>
-                    </div>
-                  </>
-                );
-              })()}
-
-              <button
-                className={`flex-1 rounded-md py-3 font-semibold transition shadow-sm border active:scale-[0.99] ${
-                  canDraw
-                    ? "bg-blue-600 text-white border-blue-700"
-                    : "bg-blue-50 text-blue-200 border-blue-100"
-                }`}
-                disabled={!canDraw}
-                onClick={() => {
-                  const socket = getSocket();
-                  socket.emit("game:draw", {}, (resp: any) => {
-                    if (!resp?.ok) alert(resp?.error ?? "Draw failed");
-                  });
-                }}
-              >
-                Draw
-              </button>
-
-              <button
-                className={`flex-1 rounded-md py-3 font-extrabold transition shadow-sm border active:scale-[0.99] ${
-                  canU
-                    ? "bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 text-amber-950 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.35)]"
-                    : "bg-amber-50 text-amber-200 border-amber-100"
-                }`}
-                disabled={!canU}
-                onClick={() => {
-                  const socket = getSocket();
-                  socket.emit("game:u", {}, (resp: any) => {
-                    if (!resp?.ok) alert(resp?.error ?? "Ù failed");
-                  });
-                }}
-              >
-                Ù
-              </button>
-
-              <button
-                className={`flex-1 rounded-md py-3 font-semibold transition shadow-sm border active:scale-[0.99] ${
-                  canDiscard && selected
-                    ? "bg-zinc-900 text-white border-zinc-950"
-                    : "bg-zinc-100 text-zinc-300 border-zinc-200"
-                }`}
-                disabled={!canDiscard || !selected}
-                onClick={discard}
-              >
-                Discard
-              </button>
-            </div>
-          </div>
+              return;
+            }
+            if (r.token) setToken(roomId, r.token);
+            if (r.playerId) setId(r.playerId);
+            localStorage.setItem("baichan-name", joiningName.current);
+          },
         );
-      })() : null}
-
-      {room?.publicGame?.phase === "playing" ? (
-        <div className="mt-6 border rounded-md p-3 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={revealHands}
-              onChange={(e) => {
-                const enabled = e.target.checked;
-                setRevealHands(enabled);
-                const socket = getSocket();
-                socket.emit("debug:revealHands", { enabled }, (resp: any) => {
-                  if (!resp?.ok) alert(resp?.error ?? "Toggle failed");
-                });
-              }}
-            />
-            {t("debug.revealHands")}
-          </label>
-        </div>
-      ) : null}
-
-      <div className="mt-6 border rounded-md">
-        <button
-          className="w-full flex items-center justify-between px-3 py-2 text-sm"
-          onClick={() => setLogsOpen((v) => !v)}
-        >
-          <span className="font-medium">Game log</span>
-          <span className="text-xs text-gray-600">{logsOpen ? "Hide" : "Show"}</span>
-        </button>
-        {logsOpen ? (
-          <div className="max-h-48 overflow-auto border-t px-3 py-2 text-xs font-mono whitespace-pre-wrap bg-zinc-50 text-zinc-900">
-            {(logs.length ? logs : ["(no logs yet)"]).slice(-200).join("\n")}
+    }
+    function onRoom(r: Room) {
+      setRoom(r);
+      if (r.phase === "playing") setResult(undefined);
+      else if (r.publicGame?.endReason === "wall_empty") setResult("The wall is empty. This hand is a draw.");
+      else if (r.publicGame?.winnerSeat !== undefined) {
+        const winner = r.publicGame.players.find(p => p.seat === r.publicGame?.winnerSeat);
+        setResult(`${winner?.nickname ?? "A player"} declared Ù!`);
+      }
+    }
+    function onPrivate(p: PrivateGameState) {
+      if (p) setPriv(p);
+    }
+    function onDisconnect() {
+      setConnected(false);
+    }
+    function onError() {
+      setConnected(false);
+      setError(
+        "Cannot reach the table server. We’ll retry automatically. Practice works without the table server.",
+      );
+    }
+    function onEnd(e: { reason?: string; winnerName?: string }) {
+      setResult(
+        e.reason === "wall_empty"
+          ? "The wall is empty. This hand is a draw."
+          : `${e.winnerName || "A player"} declared Ù!`,
+      );
+    }
+    function onLog(e: { lines: string[] }) {
+      setLog(e.lines);
+    }
+    function onReset() {
+      setId("");
+      setPriv(null);
+      setRoom(null);
+      setError("The host reset the table. Rejoin to take a new seat.");
+    }
+    socket.on("connect", join);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onError);
+    socket.on("room:state", onRoom);
+    socket.on("game:private", onPrivate);
+    socket.on("game:ended", onEnd);
+    socket.on("game:log", onLog);
+    socket.on("room:reset", onReset);
+    if (socket.connected) join();
+    else socket.connect();
+    return () => {
+      socket.off("connect", join);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onError);
+      socket.off("room:state", onRoom);
+      socket.off("game:private", onPrivate);
+      socket.off("game:ended", onEnd);
+      socket.off("game:log", onLog);
+      socket.off("room:reset", onReset);
+      socket.disconnect();
+    };
+  }, [roomId, initialName]);
+  function emit(event: string, payload: object = {}) {
+    setError("");
+    const startedAt = performance.now();
+    const move = event === "game:action" && "action" in payload ? (payload.action as Action).type : undefined;
+    getSocket()
+      .timeout(8000)
+      .emit(event, payload, (err: Error | null, r: Reply) => {
+        if (move) recordGameAction(move, err ? "timeout" : r?.ok ? "ok" : "rejected", performance.now() - startedAt);
+        if (err || !r?.ok)
+          setError(
+            err
+              ? "No response from the table. Please reconnect."
+              : String(r.error),
+          );
+      });
+  }
+  function act(a: Action) {
+    const game = room?.publicGame;
+    if (game) emit("game:action", { action: a, handId: game.handId, revision: game.revision });
+  }
+  const host = room?.players.find((p) => p.playerId === room.hostPlayerId);
+  const canStart = id && (room?.hostPlayerId === id || !host?.connected);
+  const humans = room?.players.filter(p => !p.isBot) ?? [];
+  const targetSize = humans.length > tableSize ? 5 : tableSize;
+  const botCount = fillBots ? Math.max(0, targetSize - humans.length) : 0;
+  const ready = connected && humans.every(p => p.connected) && humans.length >= (fillBots ? 2 : 4);
+  const voices = Object.fromEntries((room?.players ?? []).filter(p => p.isBot).map(p => [p.seat, p.nickname === "Minh" || p.nickname === "Nam" ? "male" as const : "female" as const]));
+  if (room?.publicGame && priv && (room.phase === "playing" || result))
+    return (
+      <>
+        <GameTable
+          game={room.publicGame}
+          voices={voices}
+          privateState={priv}
+          seat={priv.you.seat}
+          title={tr(`Table ${roomId}`)}
+          subtitle={
+            connected
+              ? tr("Connected · Private table")
+              : tr("Connection lost · Retrying")
+          }
+          disabled={!connected}
+          onAction={act}
+          onNew={canStart ? () => emit("game:restart") : undefined}
+          result={result}
+          log={log}
+        />
+        {error && (
+          <div className="claim-notice" role="alert">
+            {tr(error)}
+            <button onClick={() => setError("")}>{tr("Dismiss")}</button>
           </div>
-        ) : null}
+        )}
+      </>
+    );
+  return (
+    <main className="entry-shell">
+      <LanguageToggle />
+      <Link className="back-link" href="/">{tr("← Home")}</Link>
+      <p className="eyebrow">{tr("YOUR PRIVATE TABLE")}</p>
+      <h1>{tr("Waiting for players")}</h1>
+      <div className="room-code">
+        <span>{tr("PRIVATE INVITE KEY")}</span>
+        <strong>{roomId}</strong>
+        <small>{tr("Anyone with this link can take an open seat. Share it privately.")}</small>
+        <button
+          className="text-button"
+          onClick={async () => {
+            const link = window.location.origin + "/room/" + encodeURIComponent(roomId);
+            if (await copyInviteLink(link)) {
+              setCopied(true);
+              setManualLink("");
+            } else {
+              setCopied(false);
+              setManualLink(link);
+            }
+          }}
+        >
+          {copied ? tr("Link copied ✓") : tr("Copy invite link ↗")}
+        </button>
+        {manualLink && (
+          <label className="manual-invite-link">
+            {tr("Select and copy this invite link:")}
+            <input ref={manualLinkInput} readOnly value={manualLink} onClick={(event) => event.currentTarget.select()} />
+          </label>
+        )}
       </div>
-
-      <p className="text-xs text-gray-500 mt-6">
-        Token is stored locally per room. Reopening this page should rejoin your seat.
-      </p>
+      {!id ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            joiningName.current = name.trim();
+            getSocket().disconnect().connect();
+          }}
+        >
+          <label htmlFor="nickname">{tr("Your name")}</label>
+          <input
+            id="nickname"
+            required
+            value={name}
+            maxLength={32}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={tr("Your name")}
+          />
+          <button className="primary-button" disabled={!name.trim()}>{tr("Take a seat ↗")}</button>
+        </form>
+      ) : (
+        <>
+          <div className="lobby-players">
+            {room?.players.map((p) => (
+              <div key={p.playerId}>
+                <span className="avatar">{p.nickname[0]}</span>
+                <strong>
+                  {p.nickname}
+                  {p.playerId === id ? tr(" (you)") : ""}
+                </strong>
+                <small>{p.isBot ? tr("Bot") : p.connected ? tr("Ready") : tr("Offline")}</small>
+              </div>
+            ))}
+          </div>
+          {canStart ? (
+            <>
+              <fieldset className="lobby-bot-options">
+                <legend>{tr("Table setup")}</legend>
+                <label className="lobby-bot-toggle">
+                  <input type="checkbox" checked={fillBots} onChange={e => setFillBots(e.target.checked)} />
+                  <span>{tr("Fill empty seats with bots")}</span>
+                </label>
+                {fillBots && <label className="lobby-table-size">{tr("Table size")}
+                  <select value={targetSize} onChange={e => setTableSize(Number(e.target.value) as 4 | 5)}>
+                    <option value={4} disabled={humans.length > 4}>{tr("4 players")}</option>
+                    <option value={5}>{tr("5 players")}</option>
+                  </select>
+                </label>}
+                <p>{fillBots ? tr(`${humans.length} people + ${botCount} bots`) : tr("Four or five people, no bots.")}</p>
+                <small>{tr("People can replace bots between hands.")}</small>
+              </fieldset>
+              {!ready && <p>{tr(humans.some(p => !p.connected) ? "Wait for disconnected players to rejoin." : fillBots ? "Invite at least one other person to play with bots." : "Gather four or five players to start")}</p>}
+              <button className="primary-button" disabled={!ready}
+                onClick={() => emit("game:start", { fillBots, playerCount: targetSize })}
+              >{tr("Deal the first hand ↗")}</button>
+            </>
+          ) : (
+            <p>{tr("Waiting for the host to deal.")}</p>
+          )}
+        </>
+      )}
+      {error && (
+        <p className="error-notice" role="alert">
+          {tr(error)}
+        </p>
+      )}
+      <Link className="back-link" href="/practice">{tr("Try a practice hand →")}</Link>
     </main>
   );
 }

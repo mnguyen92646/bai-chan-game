@@ -1,0 +1,185 @@
+{
+  "version": 3,
+  "voice": "AI Voice Generator, deep preset, synthetic Vietnamese speech",
+  "effects": "Original procedural paper flips, soft wood landings, percussion and chimes",
+  "phrases": {
+    "boc": "Bốc!",
+    "an": "Ăn!",
+    "chiu": "Chíu!",
+    "win": "Ù! Ù rồi!",
+    "chiu-win": "Chíu! Ù luôn!",
+    "card-1_van": "Nhất Vạn.",
+    "card-1_vanh": "Nhất Văn.",
+    "card-1_sach": "Nhất Sách.",
+    "card-2_van": "Nhì Vạn.",
+    "card-2_vanh": "Nhì Văn.",
+    "card-2_sach": "Nhì Sách.",
+    "card-3_van": "Tam Vạn.",
+    "card-3_vanh": "Tam Văn.",
+    "card-3_sach": "Tam Sách.",
+    "card-4_van": "Tứ Vạn.",
+    "card-4_vanh": "Tứ Văn.",
+    "card-4_sach": "Tứ Sách.",
+    "card-5_van": "Ngũ Vạn.",
+    "card-5_vanh": "Ngũ Văn.",
+    "card-5_sach": "Ngũ Sách.",
+    "card-6_van": "Lục Vạn.",
+    "card-6_vanh": "Lục Văn.",
+    "card-6_sach": "Lục Sách.",
+    "card-7_van": "Thất Vạn.",
+    "card-7_vanh": "Thất Văn.",
+    "card-7_sach": "Thất Sách.",
+    "card-8_van": "Bát Vạn.",
+    "card-8_vanh": "Bát Văn.",
+    "card-8_sach": "Bát Sách.",
+    "card-9_van": "Cửu Vạn.",
+    "card-9_vanh": "Cửu Văn.",
+    "card-9_sach": "Cửu Sách.",
+    "card-chi": "Chi Chi.",
+    "card-lao": "Lão.",
+    "card-thang": "Thang."
+  },
+  "direction": "User-approved audition direction toward family Bắc 54 accent; not a named speaker clone or certified dialect model.",
+  "sources": {
+    "boc": {
+      "context_id": "c5fd825daf724b59aa0b467385729c1a",
+      "sha256": "552c4200e8dad1660ceb8a210345c8a31d856be2e913f3c936c7f617710053bb"
+    },
+    "an": {
+      "context_id": "4a837637e7684e3987385858072158a5",
+      "sha256": "3b5b292e37ed9d0a6c51ee85dd96d2c96329cb96da515518bd1e5c4dcb1d544a"
+    },
+    "chiu": {
+      "context_id": "89c53cf88bdc46d88dfd9461d1e45cb3",
+      "sha256": "b5269f32c5689da3fb277b63def00fdbc09e86c104dea1622a5495485c8263d0"
+    },
+    "win": {
+      "context_id": "51eba8357b4442b9b4dfb957335f8482",
+      "sha256": "aadafdb1eadb9fe69c2e04f5032e45635c75522c07beda3bc50fb6597d20502c"
+    },
+    "chiu-win": {
+      "context_id": "edfe639879924fb68bf8958cdcb6b7e0",
+      "sha256": "69a3654d3c7c268403921589a4abdf14c20ba802c84f62b67b17c2401ec097e2"
+    },
+    "card-1_van": {
+      "context_id": "1a06fbe5c83744709a776f7431c3624d",
+      "sha256": "e499626863285bac2491029533c5f07222cb874235213f7e41da6c5646933a60"
+    },
+    "card-1_vanh": {
+      "context_id": "da52fd4d6cbf420789bf37c7b26d4fd2",
+      "sha256": "4ab29855fa7334d06eee456978155450d6a0471bd5987547836c87aa0c902c55"
+    },
+    "card-1_sach": {
+      "context_id": "02dc18d6385e435e87a20c1f8b5b1d70",
+      "sha256": "93e13d4e8db4f8f8581be73b50415c7fd03887bea71b49d5ef3da3cd5eace167"
+    },
+    "card-2_van": {
+      "context_id": "67d9371f09ab4aad906de0e07490e3ef",
+      "sha256": "0e5a05d2c1e47fbe680b263340c39f68a42fa8007c55e3ea1bb03d8e2a030c21"
+    },
+    "card-2_vanh": {
+      "context_id": "21bccb7809a64c51a15fad93c88dc2db",
+      "sha256": "16fb39205dc60175032133f9c8b2a0f5cdb66e1ebad8f57ecea8a1c8cc37c13d"
+    },
+    "card-2_sach": {
+      "context_id": "17a1461ca2014ad982b5f57b55eeddeb",
+      "sha256": "d1643fa0cbdace48ced0d42de308f049e5604b8323cff570c900525b477c341b"
+    },
+    "card-3_van": {
+      "context_id": "723677647dd14d51a152ed4ed5e7c787",
+      "sha256": "632d005ad200e120df32729b07debb1535809d0141351cddc0bde5fd68620f15"
+    },
+    "card-3_vanh": {
+      "context_id": "b51bcf25fdd946389267cbfbc67038b6",
+      "sha256": "505e4b5854c2bc7d070a008d196feea95348b79629c4993500ec93349257e90c"
+    },
+    "card-3_sach": {
+      "context_id": "b00f5b9c46b14c9eb9d8af7410690451",
+      "sha256": "3128bb65c1ace28217393d1f0fac9ed4caa3a4b0d7cd89f119a9e20f94b1d9a4"
+    },
+    "card-4_van": {
+      "context_id": "fc2264835dc940ed81d175f10dfcf828",
+      "sha256": "0cbff313cc093331f4be052c7aa261c6882fcadf6837b40465dd2a57fdfb3e74"
+    },
+    "card-4_vanh": {
+      "context_id": "fcece200c30f4c02bee2556a33e66c8f",
+      "sha256": "a7868755ae9e3beebafbd45c9aa9225d78b98c43511baed2e6647c77c55ff86a"
+    },
+    "card-4_sach": {
+      "context_id": "60418c2b3dba4cd68657d1ecc1ca0381",
+      "sha256": "fe9d9031ff1e814e5be99adc3e7b978d9a1058e3618562efe0458bd37a6034c1"
+    },
+    "card-5_van": {
+      "context_id": "2db94145cfcb44399a1b96bbc30ba87c",
+      "sha256": "d6e021b9c5066e8f043636c35e7e0d71ee64ed9e60db566b381f5ddff950e8e8"
+    },
+    "card-5_vanh": {
+      "context_id": "c59f3c551949406c80f5026764f419c8",
+      "sha256": "e03ef2f1faf75ae626fa89611d811d011cd3665eb944388519acd4d1845106d6"
+    },
+    "card-5_sach": {
+      "context_id": "d564a5362a894fa3946920a012e2f3ad",
+      "sha256": "fb3e22f54fc9509b58a66fcf6d44cf5f0d865b7b5107c6a16ed1c198d5e73bde"
+    },
+    "card-6_van": {
+      "context_id": "7d7d9fe9033b4da08c5fbf710503679b",
+      "sha256": "7c7cb829883f9d4d9d5a7d72b8069f5e7ee1eca2c7c0247e40d89683f6719852"
+    },
+    "card-6_vanh": {
+      "context_id": "4f2f17077fa44507beb6b7d38f782732",
+      "sha256": "2bd40cd3a6f0caaca8e98a8fed6452bbc83305c849e8378a907ecf2b96598fa7"
+    },
+    "card-6_sach": {
+      "context_id": "5b7531f6366a4e4d8626a651244200c0",
+      "sha256": "038c2bdcbf1e5fde61b7923ebb9c55ffe340a3bfa5eba0475e271ee6a764fa03"
+    },
+    "card-7_van": {
+      "context_id": "2e98c80ec95241e9a7b1f6debe7e4601",
+      "sha256": "71e22fcc6992415ab9d025a85419147f2748302bbd1c739ecad89577bbda209e"
+    },
+    "card-7_vanh": {
+      "context_id": "4b4414be8e6f4dadb4e6ca95cf311b92",
+      "sha256": "5fcad260f23797a309a077da425c616081d75784d8aab11980844a7b462bf31a"
+    },
+    "card-7_sach": {
+      "context_id": "ce86ed2461e54397aa24e3a4a23c182e",
+      "sha256": "b0967461d10ec1fa2527608bf2e351979f86715f5da623dce8b9f4e669bdee3f"
+    },
+    "card-8_van": {
+      "context_id": "23c6a388f438447b90ad1f46fb77ab62",
+      "sha256": "46e812b7aa7b989c12b77657bd8ecd04df1ef9eb1c73ce5b65cb4eefc3db5c30"
+    },
+    "card-8_vanh": {
+      "context_id": "c865d601b6434b2da44ae5d6e94554e3",
+      "sha256": "f50e9b24baf2b186727b2ad27af0e3189f95ec317c10b8f1653086547a43ee40"
+    },
+    "card-8_sach": {
+      "context_id": "24f4fdd887a54dd7a8e39206f73c3409",
+      "sha256": "90ae4a0c32e5471e603f233483b06a9cac966c538178e935a126c656b4bddcaa"
+    },
+    "card-9_van": {
+      "context_id": "73df25b99140451a836561bb39cdda50",
+      "sha256": "27cca021c1edda306503475cdfb1aef8fb92983e8ecc46a0c6916cbeca28f8bd"
+    },
+    "card-9_vanh": {
+      "context_id": "580d1afd145e443c8d1fa1de5cf66225",
+      "sha256": "c7a6a41a1635080a77551189c3caea6a4da1f16cefcbddbb4ac0a192e4d2a8c4"
+    },
+    "card-9_sach": {
+      "context_id": "a033ec71df3d45d1a02ad31209c8debf",
+      "sha256": "3808d107d84e70e1b0262f7b6f6a9bcf82c6b1d98c398179a7995fd649e9c7a3"
+    },
+    "card-chi": {
+      "context_id": "121f0ff7b46841aca3c51811b13399c0",
+      "sha256": "c1f7f6afcfc88e254983a66d7a92418705205c720c998a4b80da50ffdba8312d"
+    },
+    "card-lao": {
+      "context_id": "0c7109171cc0400ea668783fe8c0de99",
+      "sha256": "f056e303bdcbe2169d8c51e2462fbb9f65a4ce026bed352f7650d8feadfafbb2"
+    },
+    "card-thang": {
+      "context_id": "158fdfaa6dd0436d9314a2d547c2fa11",
+      "sha256": "00b0b830fb91f47030e522033041ebc770e00a836c199882dbd7ecf814d34f27"
+    }
+  }
+}

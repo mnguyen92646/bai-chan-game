@@ -4,15 +4,35 @@ import cors from "cors";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
 
 const PORT = Number(process.env.PORT ?? 3001);
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me";
+if (IS_PRODUCTION && Buffer.byteLength(JWT_SECRET) < 32) {
+  throw new Error("Production requires JWT_SECRET with at least 32 bytes.");
+}
 const ROOM_TTL_MS = 8 * 60 * 60 * 1000;
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGINS ?? "http://localhost:3100,http://127.0.0.1:3100,http://michaels-mac-mini.tail7c0eb7.ts.net:3100,http://100.127.71.35:3100")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error("Origin not allowed"));
+  },
+  credentials: true
+};
 
 import type { GameState } from "./game/types";
-import { startGame, toPrivateGameState, toPublicGameState } from "./game/engine";
+import { startGame, nextDealerSeat, toPrivateGameState, toPublicGameState } from "./game/engine";
 import type { TileId } from "./game/chanDeck";
-import { groupKey } from "./game/win";
+import { transition, type Action } from "../../../packages/game/src/round";
+import { botAction, nextActor } from "../../../packages/game/src/practice";
+import { makeChanDeck } from "./game/chanDeck";
 
 import { newLogger, logLine, type GameLogger } from "./game/logger";
 import { newPrivateLog, logJsonl, type PrivateGameLog } from "./game/privateLog";
@@ -22,6 +42,7 @@ type Room = {
   createdAt: number;
   lastActiveAt: number;
   hostPlayerId?: string;
+  botOptions?: { fillBots: boolean; playerCount: 4 | 5 };
   phase: "lobby" | "playing";
   playersById: Map<
     string,
@@ -30,6 +51,7 @@ type Room = {
       nickname: string;
       seat: number;
       connected: boolean;
+      isBot?: boolean;
       socketId?: string;
     }
   >;
@@ -51,6 +73,12 @@ function snapshotGameForLog(room: Room) {
   const g = room.game?.state;
   if (!g) return null;
   return {
+    handId: g.handId,
+    revision: g.revision,
+    profile: g.profile,
+    reaction: g.reaction,
+    returnSeat: g.returnSeat,
+    endReason: g.endReason,
     phase: g.phase,
     dealerSeat: g.dealerSeat,
     turnSeat: g.turnSeat,
@@ -81,167 +109,26 @@ function audit(room: Room, event: string, data: any = {}) {
   });
 }
 
-function computeChiuEligibility(params: { hand: TileId[]; discardTile: TileId }) {
-  // Vinagames: Chíu requires 3 identical tiles in hand (no special group chíu).
-  const exactCount = params.hand.filter(t => t === params.discardTile).length;
-  if (exactCount >= 3) return { eligible: true, need: 3 } as const;
-  return { eligible: false, reason: "need_3_exact", have: exactCount } as const;
-}
-
-type AnEligibility =
-  | { eligible: false; reason: string }
-  | {
-      eligible: true;
-      canChan: boolean;
-      caTiles: TileId[];
-      mustPreferChan: boolean;
-    };
-
-function computeAnEligibility(params: {
-  meHand: TileId[];
-  discardTile: TileId;
-  cannotEatTiles?: TileId[];
-  noCaGroups?: string[];
-}) {
-  const discardTile = params.discardTile;
-
-  // Family rules: do NOT block eating a tile just because you discarded it earlier.
-  // (We only use cannotEatTiles for the "bỏ ăn" pass-penalty, not discard history.)
-  if (params.cannotEatTiles?.includes(discardTile)) {
-    return { eligible: false, reason: "bo_an_pass_penalty" } as const;
-  }
-
-  const canChan = params.meHand.includes(discardTile);
-
-  const k = groupKey(discardTile);
-
-  // Family rules: ăn cạ is allowed whenever you have any compatible tile in the same rank-group.
-  // No additional Vinagames bans by prior cạ/discard history.
-  const caTiles = Array.from(new Set(params.meHand.filter(t => groupKey(t) === k && t !== discardTile))) as TileId[];
-
-  const eligible = canChan || caTiles.length > 0;
-  if (!eligible) {
-    return { eligible: false, reason: "no_matching_for_chan_or_ca" } as const;
-  }
-
-  return {
-    eligible: true,
-    canChan,
-    caTiles,
-    mustPreferChan: canChan && caTiles.length > 0
-  } as const;
-}
-
-function computeLegalDiscardTiles(params: {
-  hand: TileId[];
-  rules: {
-    forbiddenDiscardTiles: TileId[];
-    hasEatenCaEver: boolean;
-    discardedByGroup: Record<string, TileId[]>;
-  };
-  allowDiscardChan?: boolean;
-  allowSecondTileInGroupAfterEatingCa?: boolean;
-}): TileId[] {
-  const uniq = Array.from(new Set(params.hand));
-  const out: TileId[] = [];
-
-  for (const tile of uniq) {
-    if (params.rules.forbiddenDiscardTiles.includes(tile)) continue;
-
-    // Vinagames: cấm đánh chắn (cannot discard a tile while still holding its identical pair).
-    // For MVP safety, we optionally allow breaking this rule if it would otherwise deadlock a turn.
-    const sameCount = params.hand.filter(t => t === tile).length;
-    // Family rules: only block discarding if it would break your ONLY pair (exactly 2 copies).
-    // If you have 3+ copies, you may discard one and still keep a pair.
-    if (!params.allowDiscardChan && sameCount === 2) continue;
-
-    // Track discards by groupKey for "ăn/đánh cạ" rules.
-    const gk = groupKey(tile);
-    const existing = params.rules.discardedByGroup[gk] ?? [];
-
-    // Vinagames: If you've ever eaten a cạ, you may not discard both sides of a cạ as trash.
-    // (I.e., disallow discarding a 2nd distinct tile in the same rank-group.)
-    if (
-      params.rules.hasEatenCaEver &&
-      !params.allowSecondTileInGroupAfterEatingCa &&
-      existing.some(t => t !== tile)
-    ) {
-      continue;
-    }
-
-    out.push(tile);
-  }
-
-  return out;
-}
-
-function auditClaimOptions(room: Room, context: { when: string }) {
-  const g = room.game?.state;
-  if (!room.game?.privateLog || !g?.lastDiscard) return;
-
-  const discardTile = g.lastDiscard.tile;
-  const options = Object.values(g.players)
-    .map(p => {
-      const chiu = computeChiuEligibility({ hand: p.hand, discardTile });
-
-      // Vinagames: only the next player (turnSeat), while awaiting draw, can attempt ăn.
-      const canAttemptAn = g.awaiting === "draw" && g.turnSeat === p.seat && g.lastDiscard?.fromPlayerId !== p.playerId;
-      const an: AnEligibility = canAttemptAn
-        ? computeAnEligibility({
-            meHand: p.hand,
-            discardTile,
-            cannotEatTiles: p.rules?.cannotEatTiles,
-            noCaGroups: p.rules?.noCaGroups
-          })
-        : { eligible: false, reason: "not_turn_or_not_awaiting_draw" };
-
-      const legal = {
-        anChan: canAttemptAn && an.eligible === true && an.canChan,
-        anCa: canAttemptAn && an.eligible === true && !an.mustPreferChan && an.caTiles.length > 0,
-        chiu: chiu.eligible === true
-      };
-
-      return {
-        playerId: p.playerId,
-        seat: p.seat,
-        canAttemptAn,
-        an,
-        chiu,
-        legal
-      };
-    })
-    .sort((a, b) => a.seat - b.seat);
-
-  audit(room, "CLAIM_OPTIONS", { ...context, discardTile, fromPlayerId: g.lastDiscard.fromPlayerId, options });
-}
-
 function now() {
   return Date.now();
 }
 
 function makeId(prefix: string) {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Math.random().toString(36).slice(2, 6)}`;
-}
-
-function makeRoomCode6(): string {
-  // 6-digit numeric room code, leading zeros allowed.
-  return Math.floor(Math.random() * 1_000_000)
-    .toString()
-    .padStart(6, "0");
+  return `${prefix}_${randomBytes(16).toString("base64url")}`;
 }
 
 function getOrCreateRoom(roomId?: string): Room {
   let id = roomId;
   if (!id) {
-    // Generate a unique 6-digit room code
+    // A room ID is a bearer invitation: do not use a guessable short code.
     for (let i = 0; i < 25; i++) {
-      const candidate = makeRoomCode6();
+      const candidate = makeId("room");
       if (!rooms.has(candidate)) {
         id = candidate;
         break;
       }
     }
-    if (!id) id = makeId("room"); // extremely unlikely fallback
+    if (!id) throw new Error("Could not allocate a room ID");
   }
 
   const existing = rooms.get(id);
@@ -265,14 +152,17 @@ function touch(room: Room) {
 function pruneRooms() {
   const t = now();
   for (const [roomId, room] of rooms) {
-    if (t - room.lastActiveAt > ROOM_TTL_MS) rooms.delete(roomId);
+    if (t - room.lastActiveAt > ROOM_TTL_MS) {
+      if (room.game?.pending) clearTimeout(room.game.pending);
+      rooms.delete(roomId);
+    }
   }
 }
 setInterval(pruneRooms, 60_000).unref();
 
 const app = express();
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(cors(corsOptions));
+app.use(express.json({ limit: "8kb" }));
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
@@ -284,17 +174,18 @@ app.post("/rooms", (_req, res) => {
 // Single-table mode: always use one shared room.
 const DEFAULT_ROOM_ID = process.env.DEFAULT_ROOM_ID ?? "000000";
 app.get("/room/default", (_req, res) => {
+  if (IS_PRODUCTION) return res.sendStatus(404);
   const room = getOrCreateRoom(DEFAULT_ROOM_ID);
   res.json({ roomId: room.roomId });
 });
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: true, credentials: true }
+  cors: corsOptions
 });
 
 const JoinSchema = z.object({
-  roomId: z.string().min(1),
+  roomId: z.string().min(1).max(64),
   nickname: z.string().min(1).max(32),
   token: z.string().optional()
 });
@@ -325,13 +216,84 @@ function nextAvailableSeat(room: Room) {
   return null;
 }
 
+const BotOptionsSchema = z.object({ fillBots: z.boolean(), playerCount: z.union([z.literal(4), z.literal(5)]) });
+const BOT_DELAY_MS = Math.max(10, Number(process.env.BOT_DELAY_MS) || 1100);
+
+/** Configure seats only at a hand boundary; never replace a disconnected human. */
+function prepareSeats(room: Room, raw: unknown): string | undefined {
+  const parsed = BotOptionsSchema.safeParse(raw ?? room.botOptions ?? { fillBots: false, playerCount: 4 });
+  if (!parsed.success) return "Invalid table options";
+  const options = parsed.data;
+  const humans = [...room.playersById.values()].filter(p => !p.isBot);
+  if (humans.some(p => !p.connected)) return "Wait for disconnected players to rejoin.";
+  if (options.fillBots ? humans.length < 2 : ![4, 5].includes(humans.length))
+    return options.fillBots ? "Invite at least one other person to play with bots." : "Gather four or five players to start";
+  if (options.fillBots && humans.length > options.playerCount) return "Choose a table large enough for everyone.";
+  const target = options.fillBots ? options.playerCount : humans.length;
+  // Keep existing bot identities/seats for rematches, including a bot who won.
+  const bots = [...room.playersById.values()].filter(p => p.isBot).sort((a,b) => a.seat - b.seat);
+  for (const bot of bots.slice(Math.max(0, target - humans.length))) room.playersById.delete(bot.playerId);
+  while (room.playersById.size < target) {
+    const seat = nextAvailableSeat(room)!;
+    const playerId = makeId("bot");
+    const usedNames = new Set([...room.playersById.values()].map(p => p.nickname));
+    const nickname = ["Lan", "Minh", "Mai", "Hương", "Nam"].find(name => !usedNames.has(name)) ?? `Bot ${seat}`;
+    room.playersById.set(playerId, { playerId, seat, nickname, connected: true, isBot: true });
+  }
+  room.botOptions = options;
+}
+
+/** Humans and bots share validation, public/private broadcasts and the audit trail. */
+function applyAction(room: Room, playerId: string, action: Action): boolean {
+  if (!room.game || room.phase !== "playing") return false;
+  const before = { game: room.game.state, wall: room.game.wall, log: [] as string[] };
+  const after = transition(before, playerId, action, before.game.revision);
+  if (after === before) return false;
+  room.game.state = after.game; room.game.wall = after.wall;
+  room.phase = after.game.phase;
+  for (const line of after.log) if (room.game.logger) logLine(room.game.logger, line);
+  audit(room, "ACTION", { byPlayerId: playerId, isBot: !!room.playersById.get(playerId)?.isBot, action, revision: after.game.revision, fromPhase: before.game.awaiting, source: before.game.reaction?.source, activeTile: before.game.lastDiscard?.tile });
+  touch(room);
+  io.to(room.roomId).emit("room:state", serializeRoom(room));
+  if (room.game.logger) io.to(room.roomId).emit("game:log", { lines: room.game.logger.buffer });
+  for (const p of room.playersById.values()) {
+    if (p.socketId) io.sockets.sockets.get(p.socketId)?.emit("game:private", toPrivateGameState({ game: after.game, playerId: p.playerId }));
+  }
+  if (after.game.endReason) io.to(room.roomId).emit("game:ended", {
+    reason: after.game.endReason, winnerSeat: after.game.winnerSeat,
+    winnerName: [...room.playersById.values()].find(p => p.seat === after.game.winnerSeat)?.nickname,
+  });
+  scheduleBot(room);
+  return true;
+}
+
+function scheduleBot(room: Room) {
+  const hand = room.game;
+  if (!hand) return;
+  if (hand.pending) clearTimeout(hand.pending);
+  hand.pending = undefined;
+  if (room.phase !== "playing" || ![...room.playersById.values()].some(p => !p.isBot && p.connected)) return;
+  const actor = nextActor({ game: hand.state, wall: hand.wall, log: [] });
+  if (!room.playersById.get(actor)?.isBot) return;
+  const revision = hand.state.revision;
+  hand.pending = setTimeout(() => {
+    hand.pending = undefined;
+    if (rooms.get(room.roomId) !== room || room.game !== hand || hand.state.revision !== revision || room.phase !== "playing") return;
+    if (![...room.playersById.values()].some(p => !p.isBot && p.connected)) return;
+    const action = botAction({ game: hand.state, wall: hand.wall, log: [] }, actor);
+    if (!applyAction(room, actor, action)) audit(room, "BOT_ACTION_REJECTED", { byPlayerId: actor, action });
+  }, BOT_DELAY_MS);
+  hand.pending.unref();
+}
+
 io.on("connection", (socket) => {
   socket.on("room:join", (raw, cb) => {
     const parsed = JoinSchema.safeParse(raw);
     if (!parsed.success) return cb?.({ ok: false, error: parsed.error.flatten() });
 
     const { roomId, nickname, token } = parsed.data;
-    const room = getOrCreateRoom(roomId);
+    const room = rooms.get(roomId);
+    if (!room) return cb?.({ ok: false, error: "Room not found. Ask the host for an invite link." });
     touch(room);
 
     // Rejoin path
@@ -365,6 +327,7 @@ io.on("connection", (socket) => {
             if (priv) socket.emit("game:private", priv);
           }
 
+          scheduleBot(room);
           return cb?.({
             ok: true,
             token,
@@ -379,12 +342,18 @@ io.on("connection", (socket) => {
       }
     }
 
+    if (room.phase === "playing") return cb?.({ ok: false, error: "This hand has started. Join after it finishes." });
+
     // New join path
-    const seat = nextAvailableSeat(room);
+    const replacement = [...room.playersById.values()].find(p => p.isBot);
+    const seat = replacement?.seat ?? nextAvailableSeat(room);
     if (!seat) return cb?.({ ok: false, error: "Room full" });
 
+    if (replacement) room.playersById.delete(replacement.playerId);
     const playerId = makeId("p");
     room.playersById.set(playerId, { playerId, nickname, seat, connected: true, socketId: socket.id });
+
+    if (room.botOptions && room.playersById.size > room.botOptions.playerCount) room.botOptions.playerCount = 5;
 
     // First player to join becomes host (room creator typically joins first)
     if (!room.hostPlayerId) room.hostPlayerId = playerId;
@@ -401,7 +370,7 @@ io.on("connection", (socket) => {
     return cb?.({ ok: true, token: newToken, roomId, playerId, seat, rejoined: false, isHost: room.hostPlayerId === playerId });
   });
 
-  socket.on("game:start", (_raw, cb) => {
+  socket.on("game:start", (raw, cb) => {
     const roomId = socket.data.roomId as string | undefined;
     const playerId = socket.data.playerId as string | undefined;
     if (!roomId || !playerId) return cb?.({ ok: false, error: "Not in a room" });
@@ -415,22 +384,28 @@ io.on("connection", (socket) => {
     if (!hostConnected) room.hostPlayerId = playerId;
     if (room.phase !== "lobby") return cb?.({ ok: false, error: "Game already started" });
 
-    // MVP playable loop: shuffle + deal + first turn.
-    const players = Array.from(room.playersById.values()).map(p => ({ playerId: p.playerId, seat: p.seat }));
-    // For now: dealer = host seat (simple + predictable).
-    const dealerSeat = room.playersById.get(room.hostPlayerId!)?.seat ?? 1;
+    const optionsError = prepareSeats(room, raw && Object.keys(raw).length ? raw : undefined);
+    if (optionsError) return cb?.({ ok: false, error: optionsError });
 
+    // Shuffle + deal + first turn.
+    const players = Array.from(room.playersById.values()).map(p => ({ playerId: p.playerId, seat: p.seat }));
+    // The previous winner opens; retain the host fallback after a draw.
+    const dealerSeat = nextDealerSeat(room.game?.state, [...room.playersById.values()], room.playersById.get(room.hostPlayerId!)?.seat ?? 1);
+
+    if (![4, 5].includes(players.length)) return cb?.({ ok: false, error: "Gather four or five players to start" });
     const { game, wall } = startGame({ players, dealerSeat });
     room.phase = "playing";
 
     // Rotate per-game log
     const gameId = new Date().toISOString().replace(/[:.]/g, "-");
-    const logsDir = "/Users/michaelnguyen/.openclaw/workspace/bai-chan-web/apps/server/logs";
+    const logsDir = process.env.LOGS_DIR ?? new URL("../logs", import.meta.url).pathname;
     const logger = newLogger({ logsDir, roomId, gameId });
     const privateLog = newPrivateLog({ logsDir, roomId, gameId });
     logLine(logger, `GAME_START room=${roomId} players=${players.length} dealerSeat=${dealerSeat}`);
 
+    if (room.game?.pending) clearTimeout(room.game.pending);
     room.game = { state: game, wall, logger, privateLog, gameId };
+    scheduleBot(room);
     audit(room, "GAME_START", { playersCount: players.length, dealerSeat });
     touch(room);
 
@@ -460,21 +435,27 @@ io.on("connection", (socket) => {
     if (room.hostPlayerId !== playerId && hostConnected) return cb?.({ ok: false, error: "Only host can restart" });
     if (!hostConnected) room.hostPlayerId = playerId;
 
+    const optionsError = prepareSeats(room, undefined);
+    if (optionsError) return cb?.({ ok: false, error: optionsError });
+
     // Start a fresh game immediately with the same currently-seated players.
     const players = Array.from(room.playersById.values()).map(p => ({ playerId: p.playerId, seat: p.seat }));
-    const dealerSeat = room.playersById.get(room.hostPlayerId!)?.seat ?? 1;
+    const dealerSeat = nextDealerSeat(room.game?.state, players, room.playersById.get(room.hostPlayerId!)?.seat ?? 1);
 
+    if (![4, 5].includes(players.length)) return cb?.({ ok: false, error: "Gather four or five players to start" });
     const { game, wall } = startGame({ players, dealerSeat });
     room.phase = "playing";
 
     // Rotate per-game log
     const gameId = new Date().toISOString().replace(/[:.]/g, "-");
-    const logsDir = "/Users/michaelnguyen/.openclaw/workspace/bai-chan-web/apps/server/logs";
+    const logsDir = process.env.LOGS_DIR ?? new URL("../logs", import.meta.url).pathname;
     const logger = newLogger({ logsDir, roomId, gameId });
     const privateLog = newPrivateLog({ logsDir, roomId, gameId });
     logLine(logger, `GAME_RESTART room=${roomId} players=${players.length} dealerSeat=${dealerSeat}`);
 
+    if (room.game?.pending) clearTimeout(room.game.pending);
     room.game = { state: game, wall, logger, privateLog, gameId };
+    scheduleBot(room);
     audit(room, "GAME_RESTART", { playersCount: players.length, dealerSeat });
     touch(room);
 
@@ -529,7 +510,9 @@ io.on("connection", (socket) => {
     me.socketId = socket.id;
     room.hostPlayerId = playerId;
     room.phase = "lobby";
+    if (room.game?.pending) clearTimeout(room.game.pending);
     room.game = undefined;
+    room.botOptions = undefined;
     touch(room);
 
     const newToken = signToken({ roomId, playerId, seat: me.seat, nickname: me.nickname });
@@ -542,6 +525,7 @@ io.on("connection", (socket) => {
 
   // Manual draw (required after a discard unless the player chíu's).
   socket.on("debug:revealHands", (raw, cb) => {
+    if (IS_PRODUCTION) return cb?.({ ok: false, error: "Unavailable" });
     const roomId = socket.data.roomId as string | undefined;
     const playerId = socket.data.playerId as string | undefined;
     if (!roomId || !playerId) return cb?.({ ok: false, error: "Not in a room" });
@@ -561,418 +545,23 @@ io.on("connection", (socket) => {
     return cb?.({ ok: true });
   });
 
-  socket.on("game:an", (raw, cb) => {
+  socket.on("game:action", (raw, cb) => {
     const roomId = socket.data.roomId as string | undefined;
     const playerId = socket.data.playerId as string | undefined;
-    if (!roomId || !playerId) return cb?.({ ok: false, error: "Not in a room" });
-    const room = rooms.get(roomId);
-    if (!room?.game) return cb?.({ ok: false, error: "Game not started" });
-
-    const schema = z
-      .object({
-        kind: z.enum(["chan", "ca"]).optional(),
-        withTile: z.string().optional()
-      })
-      .optional();
-    const parsed = schema.safeParse(raw);
-    if (!parsed.success) return cb?.({ ok: false, error: parsed.error.flatten() });
-
-    const requestedKind = parsed.data?.kind;
-    const requestedWithTile = parsed.data?.withTile as TileId | undefined;
-
-    const game = room.game.state;
-    const me = game.players[playerId];
-    if (!me) return cb?.({ ok: false, error: "Not a player" });
-    if (game.phase !== "playing") return cb?.({ ok: false, error: "Not playing" });
-    if (game.awaiting !== "draw") return cb?.({ ok: false, error: "Not awaiting draw" });
-    if (me.seat !== game.turnSeat) return cb?.({ ok: false, error: "Not your turn" });
-    if (!game.lastDiscard) return cb?.({ ok: false, error: "No last discard" });
-    if (game.lastDiscard.fromPlayerId === playerId) return cb?.({ ok: false, error: "Cannot ăn your own discard" });
-
-    const discardTile = game.lastDiscard.tile;
-    const fromId = game.lastDiscard.fromPlayerId;
-    const fromSeat = game.players[fromId]?.seat ?? -1;
-
-    const elig = computeAnEligibility({
-      meHand: me.hand,
-      discardTile,
-      cannotEatTiles: me.rules?.cannotEatTiles,
-      noCaGroups: me.rules?.noCaGroups
-    });
-    if (elig.eligible !== true) {
-      audit(room, "AN_REJECT", {
-        byPlayerId: playerId,
-        bySeat: me.seat,
-        tile: discardTile,
-        reason: "not_eligible",
-        details: elig
-      });
-      return cb?.({ ok: false, error: "Not eligible to ăn" });
-    }
-
-    // Default behavior (back-compat): if UI didn't specify, auto-take chan if possible; otherwise first ca option.
-    const kind: "chan" | "ca" =
-      requestedKind ?? (elig.canChan ? "chan" : (elig.caTiles.length ? "ca" : "chan"));
-
-    if (kind === "ca" && elig.mustPreferChan) {
-      audit(room, "AN_REJECT", {
-        byPlayerId: playerId,
-        bySeat: me.seat,
-        tile: discardTile,
-        reason: "must_prefer_chan"
-      });
-      return cb?.({ ok: false, error: "Must ăn chắn (cannot choose cạ when chắn is available)" });
-    }
-
-    if (kind === "chan") {
-      const idx = me.hand.indexOf(discardTile);
-      if (idx < 0) {
-        audit(room, "AN_REJECT", {
-          byPlayerId: playerId,
-          bySeat: me.seat,
-          tile: discardTile,
-          reason: "missing_matching_tile_for_chan"
-        });
-        return cb?.({ ok: false, error: "Cannot ăn chắn: missing matching tile" });
-      }
-
-      me.hand.splice(idx, 1);
-      me.melds.push({ type: "an", kind: "chan", tiles: [discardTile, discardTile], fromSeat });
-
-      // Vinagames "bỏ ăn" rule: once you eat a tile, you may not discard that tile later.
-      me.rules.forbiddenDiscardTiles.push(discardTile);
-    } else {
-      const withTile = requestedWithTile ?? elig.caTiles[0];
-      if (!withTile) {
-        audit(room, "AN_REJECT", {
-          byPlayerId: playerId,
-          bySeat: me.seat,
-          tile: discardTile,
-          reason: "missing_withTile"
-        });
-        return cb?.({ ok: false, error: "Cannot ăn cạ: no withTile provided" });
-      }
-      if (withTile === discardTile) {
-        audit(room, "AN_REJECT", {
-          byPlayerId: playerId,
-          bySeat: me.seat,
-          tile: discardTile,
-          withTile,
-          reason: "withTile_equals_discard"
-        });
-        return cb?.({ ok: false, error: "Cannot ăn cạ using identical tile" });
-      }
-      const k = groupKey(discardTile);
-      if (groupKey(withTile) !== k) {
-        audit(room, "AN_REJECT", {
-          byPlayerId: playerId,
-          bySeat: me.seat,
-          tile: discardTile,
-          withTile,
-          reason: "withTile_not_compatible"
-        });
-        return cb?.({ ok: false, error: "Cannot ăn cạ: withTile not compatible" });
-      }
-      const idx = me.hand.indexOf(withTile);
-      if (idx < 0) {
-        audit(room, "AN_REJECT", {
-          byPlayerId: playerId,
-          bySeat: me.seat,
-          tile: discardTile,
-          withTile,
-          reason: "withTile_not_in_hand"
-        });
-        return cb?.({ ok: false, error: "Cannot ăn cạ: tile not in hand" });
-      }
-
-      me.hand.splice(idx, 1);
-      me.melds.push({ type: "an", kind: "ca", tiles: [discardTile, withTile], fromSeat });
-
-      // Vinagames "bỏ ăn" rule: once you eat a tile, you may not discard that tile later.
-      me.rules.forbiddenDiscardTiles.push(discardTile);
-      me.rules.hasEatenCaEver = true;
-    }
-
-    // Remove the discard from discarder pile (last tile)
-    const from = game.players[fromId];
-    if (from && from.discards[from.discards.length - 1] === discardTile) {
-      from.discards.pop();
-    }
-
-    // Take the discard; you become turn and must discard.
-    game.lastDiscard = null;
-    game.turnSeat = me.seat;
-    game.awaiting = "discard";
-
-    room.game.logger && logLine(room.game.logger, `AN seat=${me.seat} kind=${kind} tile=${discardTile}`);
-    audit(room, "AN", { byPlayerId: playerId, bySeat: me.seat, kind, tile: discardTile, withTile: kind === "ca" ? requestedWithTile : undefined });
-
-    touch(room);
-    io.to(roomId).emit("room:state", serializeRoom(room));
-    room.game.logger && io.to(roomId).emit("game:log", { lines: room.game.logger.buffer });
-
-    // Update privates
-    socket.emit("game:private", toPrivateGameState({ game, playerId }));
-    const fromSockId = room.playersById.get(fromId)?.socketId;
-    const fromSock = fromSockId ? io.sockets.sockets.get(fromSockId) : undefined;
-    fromSock?.emit("game:private", toPrivateGameState({ game, playerId: fromId }));
-
-    return cb?.({ ok: true });
-  });
-
-  socket.on("game:draw", (_raw, cb) => {
-    const roomId = socket.data.roomId as string | undefined;
-    const playerId = socket.data.playerId as string | undefined;
-    if (!roomId || !playerId) return cb?.({ ok: false, error: "Not in a room" });
-    const room = rooms.get(roomId);
-    if (!room?.game) return cb?.({ ok: false, error: "Game not started" });
-
-    const game = room.game.state;
-    const me = game.players[playerId];
-    if (!me) return cb?.({ ok: false, error: "Not a player" });
-    if (game.phase !== "playing") return cb?.({ ok: false, error: "Not playing" });
-    if (game.awaiting !== "draw") return cb?.({ ok: false, error: "Not awaiting draw" });
-    if (me.seat !== game.turnSeat) return cb?.({ ok: false, error: "Not your turn" });
-    if (room.game.wall.length === 0) {
-      // Hand ends when wall is empty; otherwise clients can get stuck in an "awaiting draw" loop.
-      game.phase = "lobby";
-      room.phase = "lobby";
-      game.lastDiscard = null;
-      if (room.game.pending) {
-        clearTimeout(room.game.pending);
-        room.game.pending = undefined;
-      }
-
-      room.game.logger && logLine(room.game.logger, `WALL_EMPTY room=${roomId} turnSeat=${game.turnSeat}`);
-      touch(room);
-      io.to(roomId).emit("room:state", serializeRoom(room));
-      io.to(roomId).emit("game:ended", { reason: "wall_empty" });
-
-      return cb?.({ ok: false, error: "Wall empty" });
-    }
-
-    // Family rules: "bỏ ăn" penalty applies ONLY if you could have eaten the last discard
-    // and you chose to pass and draw.
-    if (game.lastDiscard) {
-      const passedTile = game.lastDiscard.tile;
-
-      const elig = computeAnEligibility({
-        meHand: me.hand,
-        discardTile: passedTile,
-        cannotEatTiles: me.rules.cannotEatTiles,
-        noCaGroups: []
-      });
-
-      if (elig.eligible === true) {
-        // penalty (family clarification): cannot later eat that exact tile.
-        // (Discarding it later is allowed; otherwise triple-tiles can deadlock.)
-        if (!me.rules.cannotEatTiles.includes(passedTile)) me.rules.cannotEatTiles.push(passedTile);
-        audit(room, "PASS_DISCARD", { byPlayerId: playerId, bySeat: me.seat, tile: passedTile, penalty: true });
-      } else {
-        audit(room, "PASS_DISCARD", { byPlayerId: playerId, bySeat: me.seat, tile: passedTile, penalty: false, reason: elig.reason });
-      }
-
-      // After drawing, you can no longer claim the prior discard; close the claim window.
-      game.lastDiscard = null;
-    }
-
-    const tile = room.game.wall.shift()!;
-    me.hand.push(tile);
-    game.wallCount = room.game.wall.length;
-    game.awaiting = "discard";
-    touch(room);
-
-    room.game.logger && logLine(room.game.logger, `DRAW seat=${me.seat} tile=${tile}`);
-    audit(room, "DRAW", { byPlayerId: playerId, bySeat: me.seat, tile });
-
-    io.to(roomId).emit("room:state", serializeRoom(room));
-    socket.emit("game:private", toPrivateGameState({ game, playerId, lastDrawnTile: tile }));
-    room.game.logger && io.to(roomId).emit("game:log", { lines: room.game.logger.buffer });
-
-    return cb?.({ ok: true, tile });
-  });
-
-  socket.on("game:discard", (raw, cb) => {
-    const roomId = socket.data.roomId as string | undefined;
-    const playerId = socket.data.playerId as string | undefined;
-    if (!roomId || !playerId) return cb?.({ ok: false, error: "Not in a room" });
-    const room = rooms.get(roomId);
-    if (!room?.game) return cb?.({ ok: false, error: "Game not started" });
-
-    const schema = z.object({ tile: z.string().min(1) });
-    const parsed = schema.safeParse(raw);
-    if (!parsed.success) return cb?.({ ok: false, error: parsed.error.flatten() });
-
-    const game = room.game.state;
-    const me = game.players[playerId];
-    if (!me) return cb?.({ ok: false, error: "Not a player" });
-    if (game.phase !== "playing") return cb?.({ ok: false, error: "Not playing" });
-    if (game.awaiting !== "discard") return cb?.({ ok: false, error: "Not awaiting discard" });
-    if (me.seat !== game.turnSeat) return cb?.({ ok: false, error: "Not your turn" });
-
-    const tile = parsed.data.tile as TileId;
-    const idx = me.hand.indexOf(tile);
-    if (idx < 0) return cb?.({ ok: false, error: "Tile not in hand" });
-
-    // Family rules: you may discard ANY tile from your hand during the discard step.
-    // (No Vinagames bans like "cannot discard pairs" or "cannot discard 2nd tile in group".)
-
-    // Apply discard now that all rules allow it.
-    me.hand.splice(idx, 1);
-    me.discards.push(tile);
-
-    // Family rules: discarding a tile does NOT permanently ban you from eating that tile later.
-    // (cannotEatTiles is reserved for the "bỏ ăn" pass-penalty only.)
-
-    // (family rules) no extra discard-history tracking needed here.
-
-    room.game.logger && logLine(room.game.logger, `DISCARD seat=${me.seat} tile=${tile}`);
-    audit(room, "DISCARD", { byPlayerId: playerId, bySeat: me.seat, tile });
-
-    // Record last discard so everyone can attempt Chíu.
-    game.lastDiscard = { tile, fromPlayerId: playerId };
-    auditClaimOptions(room, { when: "after_discard_before_advance_turn" });
-
-    // Determine next seat in turn order.
-    const seats = Object.values(game.players)
-      .map(p => p.seat)
-      .sort((a, b) => a - b);
-    const i = seats.indexOf(game.turnSeat);
-    const nextSeat = seats[(i + 1) % seats.length];
-    // Next player must now draw manually (or attempt "ăn" under the current rule). 
-    // Discard remains available for Chíu until the next discard happens.
-    game.turnSeat = nextSeat;
-    game.awaiting = "draw";
-    touch(room);
-
-    auditClaimOptions(room, { when: "after_advance_turn_awaiting_draw" });
-
-    // No timer: Chíu can happen any time while lastDiscard is set.
-    if (room.game.pending) {
-      clearTimeout(room.game.pending);
-      room.game.pending = undefined;
-    }
-
-    io.to(roomId).emit("room:state", serializeRoom(room));
-
-    // Update private hand for the discarder
-    socket.emit("game:private", toPrivateGameState({ game, playerId }));
-
-    // IMPORTANT: update private state for the next player too (their UI uses this to enable Ăn).
-    const nextPlayerId = Object.values(game.players).find(p => p.seat === nextSeat)?.playerId;
-    const nextSockId = nextPlayerId ? room.playersById.get(nextPlayerId)?.socketId : undefined;
-    const nextSock = nextSockId ? io.sockets.sockets.get(nextSockId) : undefined;
-    if (nextPlayerId && nextSock) {
-      nextSock.emit("game:private", toPrivateGameState({ game, playerId: nextPlayerId }));
-    }
-
-    return cb?.({ ok: true });
-  });
-
-  socket.on("game:u", (_raw, cb) => {
-    const roomId = socket.data.roomId as string | undefined;
-    const playerId = socket.data.playerId as string | undefined;
-    if (!roomId || !playerId) return cb?.({ ok: false, error: "Not in a room" });
-    const room = rooms.get(roomId);
-    if (!room?.game) return cb?.({ ok: false, error: "Game not started" });
-
-    const game = room.game.state;
-    const me = game.players[playerId];
-    if (!me) return cb?.({ ok: false, error: "Not a player" });
-    if (game.phase !== "playing") return cb?.({ ok: false, error: "Not playing" });
-    // Family rule: you declare Ù right after your draw (20 tiles) and before discarding.
-    if (game.turnSeat !== me.seat) return cb?.({ ok: false, error: "Not your turn" });
-    if (game.awaiting !== "discard") return cb?.({ ok: false, error: "You must be in discard step (after drawing)" });
-
-    // Validate win using the same server evaluator used to enable the UI.
-    const { isWinningHand } = require("./game/win") as typeof import("./game/win");
-    if (!isWinningHand(me.hand)) {
-      audit(room, "U_REJECT", { byPlayerId: playerId, bySeat: me.seat, reason: "hand_not_win" });
-      return cb?.({ ok: false, error: "Hand is not a win" });
-    }
-
-    game.phase = "lobby";
-    room.phase = "lobby";
-    // Keep lastDiscard for audit? Clear it.
-    game.lastDiscard = null;
-
-    if (room.game.pending) {
-      clearTimeout(room.game.pending);
-      room.game.pending = undefined;
-    }
-
-    touch(room);
-    io.to(roomId).emit("room:state", serializeRoom(room));
-    audit(room, "U", { byPlayerId: playerId, bySeat: me.seat });
-    io.to(roomId).emit("game:ended", { winnerSeat: me.seat, winnerName: room.playersById.get(playerId)?.nickname ?? "" });
-
-    return cb?.({ ok: true });
-  });
-
-  socket.on("game:chiu", (_raw, cb) => {
-    const roomId = socket.data.roomId as string | undefined;
-    const playerId = socket.data.playerId as string | undefined;
-    if (!roomId || !playerId) return cb?.({ ok: false, error: "Not in a room" });
-    const room = rooms.get(roomId);
-    if (!room?.game) return cb?.({ ok: false, error: "Game not started" });
-
-    const game = room.game.state;
-    if (game.phase !== "playing") return cb?.({ ok: false, error: "Not playing" });
-    if (!game.lastDiscard) return cb?.({ ok: false, error: "No last discard" });
-
-    const me = game.players[playerId];
-    if (!me) return cb?.({ ok: false, error: "Not a player" });
-
-    const tile = game.lastDiscard.tile;
-
-    // Vinagames Chíu eligibility: you must have 3 copies of the *exact* tile.
-    const exactCount = me.hand.filter(t => t === tile).length;
-    if (exactCount < 3) {
-      audit(room, "CHIU_REJECT", { byPlayerId: playerId, bySeat: me.seat, tile, have: exactCount, reason: "need_3_exact" });
-      return cb?.({ ok: false, error: "Not eligible to chiu (need 3 identical in hand)" });
-    }
-
-    // Remove 3 exact tiles from hand
-    let removed = 0;
-    me.hand = me.hand.filter(t => {
-      if (t === tile && removed < 3) {
-        removed++;
-        return false;
-      }
-      return true;
-    });
-
-    me.melds.push({ type: "chiu", tile });
-
-    // Remove the discard from the discarder
-    const fromId = game.lastDiscard.fromPlayerId;
-    const from = game.players[fromId];
-    if (from && from.discards[from.discards.length - 1] === tile) {
-      from.discards.pop();
-    }
-
-    // Chíu takes the discard; chíu-ing player becomes the current turn and must discard.
-    game.lastDiscard = null;
-    game.turnSeat = me.seat;
-    game.awaiting = "discard";
-    if (room.game.pending) {
-      clearTimeout(room.game.pending);
-      room.game.pending = undefined;
-    }
-
-    room.game.logger && logLine(room.game.logger, `CHIU seat=${me.seat} tile=${tile}`);
-    audit(room, "CHIU", { byPlayerId: playerId, bySeat: me.seat, tile });
-
-    touch(room);
-    io.to(roomId).emit("room:state", serializeRoom(room));
-    room.game.logger && io.to(roomId).emit("game:log", { lines: room.game.logger.buffer });
-
-    // Update privates
-    socket.emit("game:private", toPrivateGameState({ game, playerId }));
-    const fromSockId = room.playersById.get(fromId)?.socketId;
-    const fromSock = fromSockId ? io.sockets.sockets.get(fromSockId) : undefined;
-    fromSock?.emit("game:private", toPrivateGameState({ game, playerId: fromId }));
-
+    const room = roomId ? rooms.get(roomId) : undefined;
+    if (!room?.game || !playerId) return cb?.({ ok: false, error: "Game not started" });
+    const parsed = z.object({
+      handId: z.string(), revision: z.number().int().nonnegative(),
+      action: z.discriminatedUnion("type", [
+        z.object({ type: z.enum(["draw", "pass", "chiu", "win"]) }),
+        z.object({ type: z.enum(["an", "discard"]), tile: z.string().refine(t => (makeChanDeck() as string[]).includes(t)) }),
+      ]),
+    }).safeParse(raw);
+    if (!parsed.success) return cb?.({ ok: false, error: "Invalid action" });
+    if (parsed.data.handId !== room.game.state.handId || parsed.data.revision !== room.game.state.revision)
+      return cb?.({ ok: false, error: "The table changed. Try again." });
+    if (!applyAction(room, playerId, parsed.data.action as Action))
+      return cb?.({ ok: false, error: "That action is not available now." });
     return cb?.({ ok: true });
   });
 
@@ -989,6 +578,7 @@ io.on("connection", (socket) => {
       if (p.socketId === socket.id) {
         p.connected = false;
         p.socketId = undefined;
+        scheduleBot(room);
         touch(room);
         io.to(roomId).emit("room:state", serializeRoom(room));
       }
@@ -1001,18 +591,24 @@ function serializeRoom(room: Room) {
     roomId: room.roomId,
     phase: room.phase,
     hostPlayerId: room.hostPlayerId ?? null,
+    botOptions: room.botOptions,
     players: Array.from(room.playersById.values())
       .sort((a, b) => a.seat - b.seat)
-      .map(p => ({ playerId: p.playerId, seat: p.seat, nickname: p.nickname, connected: p.connected })),
+      .map(p => ({ playerId: p.playerId, seat: p.seat, nickname: p.nickname, connected: p.connected, isBot: !!p.isBot })),
     publicGame: room.game
-      ? toPublicGameState({
-          game: room.game.state,
-          nicknamesById: new Map(Array.from(room.playersById.values()).map(p => [p.playerId, p.nickname])),
-          connectedById: new Map(Array.from(room.playersById.values()).map(p => [p.playerId, p.connected])),
-          revealHands: Boolean(room.game.revealHands)
-        })
+      ? publicGameWithBots(room)
       : null
   };
+}
+
+function publicGameWithBots(room: Room) {
+  const game = toPublicGameState({
+    game: room.game!.state,
+    nicknamesById: new Map(Array.from(room.playersById.values()).map(p => [p.playerId, p.nickname])),
+    connectedById: new Map(Array.from(room.playersById.values()).map(p => [p.playerId, p.connected])),
+    revealHands: Boolean(room.game!.revealHands)
+  });
+  return { ...game, players: game.players.map(p => ({ ...p, isBot: !!room.playersById.get(p.playerId)?.isBot })) };
 }
 
 server.listen(PORT, () => {

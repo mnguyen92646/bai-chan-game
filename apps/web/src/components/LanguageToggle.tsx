@@ -1,36 +1,9 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import { type Locale, locales, defaultLocale } from "@/i18n/config";
-import { getStoredLocale, setStoredLocale } from "@/lib/locale";
-
+import { useLanguage } from "@/lib/useLanguage";
 export function LanguageToggle({ compact = false }: { compact?: boolean }) {
-  const [locale, setLocale] = useState<Locale>(defaultLocale);
-
-  useEffect(() => {
-    setLocale(getStoredLocale());
-  }, []);
-
-  return (
-    <select
-      className={
-        compact
-          ? "border rounded px-2 py-1 text-sm"
-          : "border rounded px-2 py-1"
-      }
-      value={locale}
-      onChange={(e) => {
-        const l = e.target.value as Locale;
-        if (!(locales as readonly string[]).includes(l)) return;
-        setStoredLocale(l);
-        setLocale(l);
-        // Simple global approach: reload so whichever page you're on re-loads messages.
-        window.location.reload();
-      }}
-      aria-label="Language"
-    >
-      <option value="vi">VI</option>
-      <option value="en">EN</option>
-    </select>
-  );
+  const { locale, setLocale } = useLanguage();
+  return <select className={`language-toggle ${compact ? "compact" : ""}`} value={locale}
+    aria-label="Ngôn ngữ / Language" onChange={(e) => setLocale(e.target.value === "en" ? "en" : "vi")}>
+    <option value="vi">Tiếng Việt</option><option value="en">English</option>
+  </select>;
 }

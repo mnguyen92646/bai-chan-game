@@ -1,0 +1,185 @@
+{
+  "provider": "google",
+  "phrases": {
+    "boc": "Bốc!",
+    "an": "Ăn!",
+    "chiu": "Chíu!",
+    "win": "Ù! Ù rồi!",
+    "chiu-win": "Chíu! Ù rồi!",
+    "card-1_van": "Nhất Vạn.",
+    "card-1_vanh": "Nhất Văn.",
+    "card-1_sach": "Nhất Sách.",
+    "card-2_van": "Nhì Vạn.",
+    "card-2_vanh": "Nhì Văn.",
+    "card-2_sach": "Nhì Sách.",
+    "card-3_van": "Tam Vạn.",
+    "card-3_vanh": "Tam Văn.",
+    "card-3_sach": "Tam Sách.",
+    "card-4_van": "Tứ Vạn.",
+    "card-4_vanh": "Tứ Văn.",
+    "card-4_sach": "Tứ Sách.",
+    "card-5_van": "Ngũ Vạn.",
+    "card-5_vanh": "Ngũ Văn.",
+    "card-5_sach": "Ngũ Sách.",
+    "card-6_van": "Lục Vạn.",
+    "card-6_vanh": "Lục Văn.",
+    "card-6_sach": "Lục Sách.",
+    "card-7_van": "Thất Vạn.",
+    "card-7_vanh": "Thất Văn.",
+    "card-7_sach": "Thất Sách.",
+    "card-8_van": "Bát Vạn.",
+    "card-8_vanh": "Bát Văn.",
+    "card-8_sach": "Bát Sách.",
+    "card-9_van": "Cửu Vạn.",
+    "card-9_vanh": "Cửu Văn.",
+    "card-9_sach": "Cửu Sách.",
+    "card-chi": "Chi Chi.",
+    "card-lao": "Lão.",
+    "card-thang": "Thang."
+  },
+  "voices": {
+    "shared": "vi"
+  },
+  "clips": {
+    "shared/boc": {
+      "duration": 0.72,
+      "sha256": "a245f0a59fa0979e54232b38e53b50f2d6f9e2a6cc4039705b3623e58e83da26"
+    },
+    "shared/an": {
+      "duration": 0.744014,
+      "sha256": "d4d22254ec4166800e76f6447753e6c07980178be85a1be9f349814af9434ef6"
+    },
+    "shared/chiu": {
+      "duration": 0.864014,
+      "sha256": "a684363190a0743bd4c719831e998f9caeec619ab9614fdf410d4eb1906b60a5"
+    },
+    "shared/win": {
+      "duration": 1.751995,
+      "sha256": "4cf58cc9d115d68002e34618350c8d6605fef0a72721c007a8a741abfd37a6ca"
+    },
+    "shared/chiu-win": {
+      "duration": 1.824014,
+      "sha256": "8534819e0afa849b433da1299efa4df0cdfff3bec4e6e95423b82a7ed5dc23dc"
+    },
+    "shared/card-1_van": {
+      "duration": 1.008005,
+      "sha256": "574b9944de6e10b7c48e159ee27b0246a2afe9c3615719483ae11bd25b9c76b4"
+    },
+    "shared/card-1_vanh": {
+      "duration": 1.056009,
+      "sha256": "84eb2851bfd83f2e7f7a4f82e224856df5513f65f228caa4d1af85f2df1a6349"
+    },
+    "shared/card-1_sach": {
+      "duration": 1.008005,
+      "sha256": "814d5e68cb65da43ad40327ab8f1ed3b3aad9348dae502002d4ec72245d1f7af"
+    },
+    "shared/card-2_van": {
+      "duration": 0.984014,
+      "sha256": "f82b9185a1d95a54e6109560b69e2071f9f21e633883ce52a6ff367e9626908c"
+    },
+    "shared/card-2_vanh": {
+      "duration": 1.031995,
+      "sha256": "275ad6dda8eb19e883104037179f8c0af6a3426dc6e85558d063f46c3a6cff26"
+    },
+    "shared/card-2_sach": {
+      "duration": 1.008005,
+      "sha256": "8aaead6a82d4b0bfec05571656ccac1547f61edf17b60e62e56c11598e0809f1"
+    },
+    "shared/card-3_van": {
+      "duration": 1.008005,
+      "sha256": "53e0092ff50f9ef870c1243ed3318516d54017913c2beab6e3960e328a491193"
+    },
+    "shared/card-3_vanh": {
+      "duration": 1.008005,
+      "sha256": "e05134728e845b38baf6c16abe58b7a3dfb403767b4be5f68e037ba9ddbfdec9"
+    },
+    "shared/card-3_sach": {
+      "duration": 1.008005,
+      "sha256": "c60d911e4d99ca36d070a32d72cdce678b89549e9527e8ceb5671a4040fbd660"
+    },
+    "shared/card-4_van": {
+      "duration": 1.008005,
+      "sha256": "4eb2c902085f43b46b3ce776689086704538e8bb46d8e7c06ac1ea61a8f03717"
+    },
+    "shared/card-4_vanh": {
+      "duration": 1.031995,
+      "sha256": "816845d84bfcb3b4c837c56b46156755ecb618c6b795c8d81cbdcf184d98889b"
+    },
+    "shared/card-4_sach": {
+      "duration": 0.984014,
+      "sha256": "f8f491bded6585f0a22fadf25e4cca65345e44b3ef0735caeea499e4c78140f5"
+    },
+    "shared/card-5_van": {
+      "duration": 1.008005,
+      "sha256": "b90d276620d70703bfbbfaf2e40e9622642c0e94e7ec8e7284e79ab5c264b970"
+    },
+    "shared/card-5_vanh": {
+      "duration": 1.008005,
+      "sha256": "333e834537c4424ef4f7f827622a8d16653051650899d85bfce3511a9afbca13"
+    },
+    "shared/card-5_sach": {
+      "duration": 0.984014,
+      "sha256": "0e81f613f83d5d96f0de44252497b7f3ac46ba1095e3c3cf01841d464af38cfe"
+    },
+    "shared/card-6_van": {
+      "duration": 1.008005,
+      "sha256": "d28ad199923370f443ba62821b5b083bfea5a21485aef7b4a3e9b6449a01764b"
+    },
+    "shared/card-6_vanh": {
+      "duration": 1.008005,
+      "sha256": "9f9f98f9bf6b7831527e8522a118506b466be7c2bdb73517ea90fd81453d7ff6"
+    },
+    "shared/card-6_sach": {
+      "duration": 1.008005,
+      "sha256": "fa3b367b385c8db2902ebe228cd48c1410283155e1e5608e503e6053e552440f"
+    },
+    "shared/card-7_van": {
+      "duration": 1.008005,
+      "sha256": "9e68d2e6502adf07228dc7173157700d3acd7f7376feedfaf30e9f7bf52cf119"
+    },
+    "shared/card-7_vanh": {
+      "duration": 1.031995,
+      "sha256": "da75340399581b03522c8a4ddcd040ba550b6213e47e1ae348cb5cfdfb0551e2"
+    },
+    "shared/card-7_sach": {
+      "duration": 1.008005,
+      "sha256": "30c5c26fc2b690eb800cd84c619223005229f8bd5ec186ced93bc55436c04a2e"
+    },
+    "shared/card-8_van": {
+      "duration": 1.008005,
+      "sha256": "0699e947da25e28bf7b97433ac7562f0b4f0d3b952bd290c42fc312dd51a0077"
+    },
+    "shared/card-8_vanh": {
+      "duration": 1.056009,
+      "sha256": "7b7ad898b5a4fa5f5ef3cbac2cbff3a8a32521f7b1d553f52c7d23c84b541c7f"
+    },
+    "shared/card-8_sach": {
+      "duration": 1.008005,
+      "sha256": "c4a35c7ab40f7697b648c4830cdd01723c704804ff9feb8d10257fef6a79593c"
+    },
+    "shared/card-9_van": {
+      "duration": 1.031995,
+      "sha256": "e26fa8f2c51a9351eb2a824bdd3f1dc3b6afd9595e45e72724266498272ec3af"
+    },
+    "shared/card-9_vanh": {
+      "duration": 1.008005,
+      "sha256": "d3a517d14f43fd4d8f2357d2f04e72c84eefbdf16906b520783fda08d3cd187a"
+    },
+    "shared/card-9_sach": {
+      "duration": 1.031995,
+      "sha256": "68747ea611c387fcac4ff0508c9df865849424bbfe0004e514c4da3ea5455081"
+    },
+    "shared/card-chi": {
+      "duration": 1.056009,
+      "sha256": "958ad9d3bc124fd0777f220a878719560b17a90ad03f8630cc8f5d40ce019864"
+    },
+    "shared/card-lao": {
+      "duration": 0.84,
+      "sha256": "05660d1bb45f2fd9ab3474215376e57dd3124ca6ee181dbdb8f712c575bc2a7e"
+    },
+    "shared/card-thang": {
+      "duration": 0.816009,
+      "sha256": "4949e3a205099ef2992d01b3a2916660e74124573b578b544f737f23d666e3a0"
+    }
+  }
+}

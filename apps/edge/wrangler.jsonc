@@ -1,0 +1,23 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "bai-chan-rooms",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-22",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "RoomObject" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomObject"] }],
+  "ratelimits": [
+    { "name": "CREATE_LIMIT", "namespace_id": "42001", "simple": { "limit": 10, "period": 60 } },
+    { "name": "CONNECT_LIMIT", "namespace_id": "42002", "simple": { "limit": 30, "period": 60 } }
+  ],
+  "vars": {
+    "WEB_ORIGINS": "https://bai-chan-play.white-violet-3211.workers.dev"
+  }
+}

@@ -1,0 +1,539 @@
+{
+  "version": 4,
+  "phrases": {
+    "boc": "Bốc!",
+    "an": "Ăn!",
+    "chiu": "Chíu!",
+    "win": "Ù! Ù rồi!",
+    "chiu-win": "Chíu! Ù luôn!",
+    "card-1_van": "Nhất Vạn.",
+    "card-1_vanh": "Nhất Văn.",
+    "card-1_sach": "Nhất Sách.",
+    "card-2_van": "Nhì Vạn.",
+    "card-2_vanh": "Nhì Văn.",
+    "card-2_sach": "Nhì Sách.",
+    "card-3_van": "Tam Vạn.",
+    "card-3_vanh": "Tam Văn.",
+    "card-3_sach": "Tam Sách.",
+    "card-4_van": "Tứ Vạn.",
+    "card-4_vanh": "Tứ Văn.",
+    "card-4_sach": "Tứ Sách.",
+    "card-5_van": "Ngũ Vạn.",
+    "card-5_vanh": "Ngũ Văn.",
+    "card-5_sach": "Ngũ Sách.",
+    "card-6_van": "Lục Vạn.",
+    "card-6_vanh": "Lục Văn.",
+    "card-6_sach": "Lục Sách.",
+    "card-7_van": "Thất Vạn.",
+    "card-7_vanh": "Thất Văn.",
+    "card-7_sach": "Thất Sách.",
+    "card-8_van": "Bát Vạn.",
+    "card-8_vanh": "Bát Văn.",
+    "card-8_sach": "Bát Sách.",
+    "card-9_van": "Cửu Vạn.",
+    "card-9_vanh": "Cửu Văn.",
+    "card-9_sach": "Cửu Sách.",
+    "card-chi": "Chi Chi.",
+    "card-lao": "Lão.",
+    "card-thang": "Thang."
+  },
+  "sources": {
+    "male/boc": {
+      "context_id": "c5fd825daf724b59aa0b467385729c1a",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.6661,
+      "sha256": "c38a69a52825c1f05004fb84fdddca3b6c007d84a0e0c1ff0a7e29f7307d2a5e"
+    },
+    "male/an": {
+      "context_id": "4a837637e7684e3987385858072158a5",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.648912,
+      "sha256": "e576b938dffd04ec72906c4b90695c6191ba4e28589edb3c7324d8cdc80d5dea"
+    },
+    "male/chiu": {
+      "context_id": "89c53cf88bdc46d88dfd9461d1e45cb3",
+      "preset": "deep",
+      "tempo": 0.65,
+      "duration": 0.881361,
+      "sha256": "c37a4a8fe6c255afa846ad2d788742bc18ad6b4350ef412776559a19a26b01e8"
+    },
+    "male/win": {
+      "context_id": "51eba8357b4442b9b4dfb957335f8482",
+      "preset": "deep",
+      "tempo": 0.65,
+      "duration": 0.823356,
+      "sha256": "927b6b7baa769c924dd403d42a1bf142cd0772eeffc0d8ca7f3b5e89dc6f65e5"
+    },
+    "male/chiu-win": {
+      "context_id": "edfe639879924fb68bf8958cdcb6b7e0",
+      "preset": "deep",
+      "tempo": 0.65,
+      "duration": 1.394512,
+      "sha256": "08e08eaa81dfb0c99ec5ecff9fde2e2146a387fe24d8a674495d7e38d1ec8551"
+    },
+    "male/card-1_van": {
+      "context_id": "1a06fbe5c83744709a776f7431c3624d",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.727596,
+      "sha256": "8d4d2d93f2803e6a6835eac7f7265a573a268a83be1369bd1df4341ebc29d5c2"
+    },
+    "male/card-1_vanh": {
+      "context_id": "da52fd4d6cbf420789bf37c7b26d4fd2",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.722426,
+      "sha256": "8b6df7d282b7c4af3071863c6f5fba4d1da86a89e7891adcfee0fb64aa42e614"
+    },
+    "male/card-1_sach": {
+      "context_id": "02dc18d6385e435e87a20c1f8b5b1d70",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.855397,
+      "sha256": "00f7291d10a679e2e34464ab40dd300ad902f72b71262b9881dd6bc6b777b349"
+    },
+    "male/card-2_van": {
+      "context_id": "67d9371f09ab4aad906de0e07490e3ef",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.671202,
+      "sha256": "fa472ad5ef369f2f266e8a1b6af957e8cae280d4ae1acda43bdbb98627a126fb"
+    },
+    "male/card-2_vanh": {
+      "context_id": "21bccb7809a64c51a15fad93c88dc2db",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.809116,
+      "sha256": "bfab5ad9f159832f3d48c74c6c24414dc813c3ba83acda2b57c605741836cbc0"
+    },
+    "male/card-2_sach": {
+      "context_id": "17a1461ca2014ad982b5f57b55eeddeb",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.813243,
+      "sha256": "81e9188d98425ed4d554f2e810a5e7cb72f8fbd4367d43e7ae7c676a83e5e5af"
+    },
+    "male/card-3_van": {
+      "context_id": "723677647dd14d51a152ed4ed5e7c787",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.693016,
+      "sha256": "4d13f8af747c6e48bb875c86d78bd49876f8b9a9a3ab7c02bb6441dfa66d4bf4"
+    },
+    "male/card-3_vanh": {
+      "context_id": "b51bcf25fdd946389267cbfbc67038b6",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.776032,
+      "sha256": "0403171a853319e8ef8fec60fa7a79282a67ec3eaada744b13a9ddbc8e660f8d"
+    },
+    "male/card-3_sach": {
+      "context_id": "b00f5b9c46b14c9eb9d8af7410690451",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.779909,
+      "sha256": "1f0e35010ff8630f55a90bc923eea0979adf65d5c48bb0fbe63b3a15b48a5d9c"
+    },
+    "male/card-4_van": {
+      "context_id": "fc2264835dc940ed81d175f10dfcf828",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.696621,
+      "sha256": "2683b5ba0b4b70f5000ef943cdbe032c8171d419ffb890cbae439596b8e3bccf"
+    },
+    "male/card-4_vanh": {
+      "context_id": "fcece200c30f4c02bee2556a33e66c8f",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.667211,
+      "sha256": "b21d9e21c83667c3398119a104bcaff2c8778c9a4c1aa2ffd777bb85b98e4d7c"
+    },
+    "male/card-4_sach": {
+      "context_id": "60418c2b3dba4cd68657d1ecc1ca0381",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.692404,
+      "sha256": "02637a42d2203743f93f1fc9e57c888e6ee12db24681aa9f044957c94330a22b"
+    },
+    "male/card-5_van": {
+      "context_id": "2db94145cfcb44399a1b96bbc30ba87c",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.774036,
+      "sha256": "59bdf882d9701cd81f4942268c7f4dcc34cebb522d4bea6413550c610ec94371"
+    },
+    "male/card-5_vanh": {
+      "context_id": "c59f3c551949406c80f5026764f419c8",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.89093,
+      "sha256": "c7ff54efb600a98dcdfb092ec3ca1df3a9b9830d242404857efeb3ddc3c617f1"
+    },
+    "male/card-5_sach": {
+      "context_id": "d564a5362a894fa3946920a012e2f3ad",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.884059,
+      "sha256": "041e8a70787a6ace56ac07fc246e66e2dc0d1b0730ef9c3120c130889554e5ca"
+    },
+    "male/card-6_van": {
+      "context_id": "7d7d9fe9033b4da08c5fbf710503679b",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.67356,
+      "sha256": "3acea69e6491d7de8d2bbb9445ab8efe4f47bdd8d24138b4c88adbd770f00011"
+    },
+    "male/card-6_vanh": {
+      "context_id": "4f2f17077fa44507beb6b7d38f782732",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.750952,
+      "sha256": "c565a6519275892295a7855b634bf077cfe00526e2d7180ea02174d39b0f0f37"
+    },
+    "male/card-6_sach": {
+      "context_id": "5b7531f6366a4e4d8626a651244200c0",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.693628,
+      "sha256": "8da579ad552e8fd4498359bf46883c2f3d73d942dcdc8d6df8396f2d9d44b092"
+    },
+    "male/card-7_van": {
+      "context_id": "2e98c80ec95241e9a7b1f6debe7e4601",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.720476,
+      "sha256": "958e66f82b085e4d63f1aae536439d67fa5931c812b29a640cf4fef331f4fca3"
+    },
+    "male/card-7_vanh": {
+      "context_id": "4b4414be8e6f4dadb4e6ca95cf311b92",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.780295,
+      "sha256": "4c2ccd577c7b53afa287c2c751aaaf1b9993c3d90bcab0e3a9a879a042c61bcc"
+    },
+    "male/card-7_sach": {
+      "context_id": "ce86ed2461e54397aa24e3a4a23c182e",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.855941,
+      "sha256": "4157e3b7e182f63cf88af9e5781dc641f0a9884b1f939333d476fe77842024a4"
+    },
+    "male/card-8_van": {
+      "context_id": "23c6a388f438447b90ad1f46fb77ab62",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.611927,
+      "sha256": "b870b6e7c6bc429ce18b54fe3a6214c86d22abc374a9233efc17f6913545c8da"
+    },
+    "male/card-8_vanh": {
+      "context_id": "c865d601b6434b2da44ae5d6e94554e3",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.746735,
+      "sha256": "c66b3bb75564f42e2e38ddf8bd6a1182d3d611dc67e45e53e8d8b11b424ace82"
+    },
+    "male/card-8_sach": {
+      "context_id": "24f4fdd887a54dd7a8e39206f73c3409",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.834014,
+      "sha256": "1d7a8014720798316b3fbbfc9aef1ef8d8059d624906179dce79cda9cbf7bb81"
+    },
+    "male/card-9_van": {
+      "context_id": "73df25b99140451a836561bb39cdda50",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.676735,
+      "sha256": "c9e5a8975d22a21105dd7211ce8b0ee5c9310b4cd89e515aa3e66a805a6e396f"
+    },
+    "male/card-9_vanh": {
+      "context_id": "580d1afd145e443c8d1fa1de5cf66225",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.699569,
+      "sha256": "3553b4ed492a389b260d71ad77485b7c4977e16f0552539a48f6e937fc670085"
+    },
+    "male/card-9_sach": {
+      "context_id": "a033ec71df3d45d1a02ad31209c8debf",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.751429,
+      "sha256": "0e3c94ea703fdd7896f59abe929bbea91ac539d00d36c3fa1aff55496ecfbd95"
+    },
+    "male/card-chi": {
+      "context_id": "121f0ff7b46841aca3c51811b13399c0",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.677098,
+      "sha256": "711218f2d939b4ec31441ec5d9a775511feb7e1afda1aaccf092b4649757cde0"
+    },
+    "male/card-lao": {
+      "context_id": "0c7109171cc0400ea668783fe8c0de99",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.66458,
+      "sha256": "05c20542f54c40b0c740c434b813f1df932af90389fd4e65190cd0b67a0810ce"
+    },
+    "male/card-thang": {
+      "context_id": "158fdfaa6dd0436d9314a2d547c2fa11",
+      "preset": "deep",
+      "tempo": 0.9,
+      "duration": 0.638209,
+      "sha256": "2fce8b43cb9c095853881334d39812023b347cf7b57929920836ac2588a71079"
+    },
+    "female/boc": {
+      "context_id": "83e7c2f02c1c4360b16e829733b38abe",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.538934,
+      "sha256": "5a5c94de71e208a522f0d081e5baf8cc7497494589e65bf4cd97215549102a6c"
+    },
+    "female/an": {
+      "context_id": "70422aab008c4f909c984f4e1a1237a4",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.667506,
+      "sha256": "5b632004a49ad22def03799536c6e76dab8a4221dccbb0c6403f013e101cc601"
+    },
+    "female/chiu": {
+      "context_id": "c664dc877f5a49cc97735c1c293143ad",
+      "preset": "crisp",
+      "tempo": 0.65,
+      "duration": 0.814127,
+      "sha256": "a2e9e7c3565c0b9a3ed0f8ae4d346e10297204957c7035dfee3708d3ac32d21a"
+    },
+    "female/win": {
+      "context_id": "79e958f7fdc04baf99ed33aeb7439237",
+      "preset": "crisp",
+      "tempo": 0.65,
+      "duration": 0.738662,
+      "sha256": "ba73db1d3a124b3225c0cc784f2ee9ac2123a9054252c44b1ccdd80ac0fdf6e7"
+    },
+    "female/chiu-win": {
+      "context_id": "757c9e8ad68542a68d9da90fa9874d89",
+      "preset": "crisp",
+      "tempo": 0.65,
+      "duration": 1.417347,
+      "sha256": "8799b160cc864a57cedc933d005dd09f81735bd6c7a044545e0b5841538b27ef"
+    },
+    "female/card-1_van": {
+      "context_id": "0b11ee9595f74d50a3877088279b8de1",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.722721,
+      "sha256": "f7b37a1b8b0671de656a1c29e6508f62839ca5f2b23a248fb7fac9b3c25eb2cb"
+    },
+    "female/card-1_vanh": {
+      "context_id": "1cf9e08364c8475ba4d6a443a664fd02",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.784739,
+      "sha256": "a2ff5de79169894386425efd8e2c81699a6490837c04d756a710de87d099bb41"
+    },
+    "female/card-1_sach": {
+      "context_id": "1d1ab0182f1f4356b20a32d460da11b1",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.754694,
+      "sha256": "b0af8966706857a0947ab5a183f7b70cc20f05c04ece137bea58a82a1f9e662a"
+    },
+    "female/card-2_van": {
+      "context_id": "9039dabc14b24464ac054233b1b6d4b8",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.693673,
+      "sha256": "bcfd83e4e87c28fd87ada850de2c2a0327a8ddd5246a94f1931d33fda4b01f17"
+    },
+    "female/card-2_sach": {
+      "context_id": "c86a3800bf304736bf4c4749d8d00c9d",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.779365,
+      "sha256": "da767a463b70190d7306763ef1f8f1ac804aef82da612cfc582d18d5216ebfab"
+    },
+    "female/card-3_van": {
+      "context_id": "16dbe0c8c9dc483bad45298f167ec493",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.692404,
+      "sha256": "0ea94655302c1314ac5763f86b67b0be3702476c24f1a9991064c6e8a69d0cdb"
+    },
+    "female/card-3_vanh": {
+      "context_id": "dd7259bf6739494ba347223d859d5143",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.808095,
+      "sha256": "62ac88f45a11ba791877443818b370067a8a6e00a7490577a69b73109487faa9"
+    },
+    "female/card-3_sach": {
+      "context_id": "b1b89f7e6b7f4a32bef47f86b98fd90e",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.74771,
+      "sha256": "146093aee4c36b4cc087746dbae7b6bc6835e008ad38d3567c6dbc6a33cfaf45"
+    },
+    "female/card-4_van": {
+      "context_id": "91cdcae3ea924bf88d322b73ac4b9ba1",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.597914,
+      "sha256": "777a65a7ab3710f1118ba0a3d48db10a6f9b3a8d39a62daaf5a0a88fb96494cd"
+    },
+    "female/card-4_vanh": {
+      "context_id": "8dbdf43e9a094effa5ddcc1c03792643",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.674218,
+      "sha256": "81f18e9efde371d38754e988ebdf3e000e4a9c9693ee75d15ae9e7e089873d41"
+    },
+    "female/card-4_sach": {
+      "context_id": "4d9b5b40d6484d49ad1e8aee7494adc4",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.693651,
+      "sha256": "23e78c84c40af1d74edfb0563b6655520636e745126b0d78c693089c9c9095da"
+    },
+    "female/card-5_van": {
+      "context_id": "e4ad04e2441345f8a772f254f262185a",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.77966,
+      "sha256": "63d635f86372c4e3c060f962709e005b93a3b43fcd7abd9bf07497b59822db39"
+    },
+    "female/card-5_vanh": {
+      "context_id": "593df8366ac14e29a5caefcfc63561f5",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.878844,
+      "sha256": "e6a8051d4c63ad74100eec72716816f6110461c07e3f347b5b5339bcee273da6"
+    },
+    "female/card-5_sach": {
+      "context_id": "d8cfbd232c904e6aa0723193abb9a2f7",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.858934,
+      "sha256": "b6c9a4ca724f61969626459e5f29da9cdb8f15621b3c879f4e2455e3806d351b"
+    },
+    "female/card-6_van": {
+      "context_id": "bbb11181a8ef4f88a65ffdd41b66e33d",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.667732,
+      "sha256": "a66323846d1f0c1acebefc967f0a0d3fd1884b6dfeaaeec46fcb4f551094f93a"
+    },
+    "female/card-6_vanh": {
+      "context_id": "034608dfc8a646ad87beb5d690c5157c",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.751134,
+      "sha256": "5dff4cf5c2874a0971ede20a6c08a870bfc77d29617728028a61ade7ded13700"
+    },
+    "female/card-6_sach": {
+      "context_id": "07269ffd588b4d8cac55f97a634109bc",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.511293,
+      "sha256": "6197a7b206f60a715c274a2c3e1003d15641e720a899a911034f92015697a2d1"
+    },
+    "female/card-7_van": {
+      "context_id": "915bfdd743c9441aa984b251aa51d688",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.696871,
+      "sha256": "34e91a8fbfdc2aa0ed501a73d01fa610efa412efc02f20ecacd84444d2e530d3"
+    },
+    "female/card-7_vanh": {
+      "context_id": "5bdc8fe9fd404eb684a4f0716e7d4592",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.856531,
+      "sha256": "a27fc8fae58342ffe96811f33c4938c0504c98f98c98da9f67a61d1d5148b239"
+    },
+    "female/card-7_sach": {
+      "context_id": "c327d10e18d14d198ac4cbf8638b9ea3",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.882971,
+      "sha256": "6c25c95af16b7ddad8a4b8c66a50cea5f3ecb40892b2e9c0b0d91edc4b9fd65a"
+    },
+    "female/card-8_van": {
+      "context_id": "56c1f376e1524a4896e307aa165a5093",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.721565,
+      "sha256": "cba3113a893f2843bc071efb9634b6cde04559e135494dfa982a3e95f95dd21c"
+    },
+    "female/card-8_vanh": {
+      "context_id": "f14c0c2c63e34f29b9d63d1d273473cc",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.827891,
+      "sha256": "3be1d5bc8f334ca25e038881eedb3fffdd960e9c72cc51ff34729267d18d7f97"
+    },
+    "female/card-8_sach": {
+      "context_id": "585723fb926f4c3ab7fa5435fe02290c",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.807052,
+      "sha256": "7e9f30148a5ba694c86ce2d245c2768e2238c1f73ac2c63f38427521260eb3a5"
+    },
+    "female/card-9_van": {
+      "context_id": "95458fef94394170928629e55a8df926",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.694195,
+      "sha256": "eaa86003bd7b97771c0b32f2c90c381e4a062c00cd8844295099187b90ce8181"
+    },
+    "female/card-9_vanh": {
+      "context_id": "b55e81e3773145c5b59ead761f5a0443",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.78,
+      "sha256": "636be0f9329e5b1c9146c8c9f243db1722b9dba1801ddc242957bd1de00139ca"
+    },
+    "female/card-9_sach": {
+      "context_id": "2c53fc4fe48645d9ab33714e3fbcc0e2",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.804036,
+      "sha256": "8263a8da5ef3278a2c6e421b032603cf319376d0e78a3fb522d6ddc3d2de44cb"
+    },
+    "female/card-chi": {
+      "context_id": "12588673a2da4bab87eab649b8a3b293",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.700567,
+      "sha256": "9c0e5f41115b9f878e334766e596ee8854b21b2ba07ee255228446994e5ba243"
+    },
+    "female/card-lao": {
+      "context_id": "03b62b8f507d4b92b35a158ff5c068e9",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.669637,
+      "sha256": "fa2966778bc88ed5d5547fc9b627ba10aeb0716d9dc46f0f5eea6c7ef7bd62b1"
+    },
+    "female/card-thang": {
+      "context_id": "9c711b72a3a74d7dadfde247c7c9a97b",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.670952,
+      "sha256": "5639cdcf79a9c953795b3cd6c78112cc38edf040924a57cc4dc33c596ccb6074"
+    },
+    "female/card-2_vanh": {
+      "context_id": "4ebfce1552554a789cea8e186e7178ee",
+      "preset": "crisp",
+      "tempo": 0.9,
+      "duration": 0.775986,
+      "sha256": "abb5160e00837356cea5a544597c5fdb8fdd3f67b64e0d25c2639d4bfcca1d89"
+    }
+  },
+  "voices": {
+    "male": "AI Voice Generator deep preset (Minh)",
+    "female": "AI Voice Generator crisp preset (Lan, Mai)"
+  },
+  "direction": "Synthetic stock voices; deep preserves the approved direction. No named-person cloning or certified regional dialect model.",
+  "processing": "Original sources; gentle presence EQ, pitch-preserving 0.65x Chíu/Ù and 0.9x other calls; 44.1kHz/128kbps output.",
+  "effects": "Original soft paper claim/four rustles; preserved paper draw/discard and celebration."
+}
