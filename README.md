@@ -4,7 +4,7 @@ A mobile-first web game using the family's 120-card deck and the original illust
 
 Play the [public game](https://bai-chan-play.white-violet-3211.workers.dev/) or read the [research note and family rules](https://michaelnguyen.net/baichan.html). If your family plays with this deck, [share your rules](https://github.com/mnguyen92646/bai-chan-game/issues/new?template=family-rules.yml). Code contributions are welcome; start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Source code and documentation are MIT licensed. Card art and audio are excluded from that license; see [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md).
+Source code and documentation are MIT licensed. Card art and audio are excluded from that license; see [LICENSE](LICENSE) and [media rights](MEDIA_LICENSE.md).
 
 ## Play locally
 
