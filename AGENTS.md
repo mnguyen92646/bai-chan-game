@@ -3,8 +3,7 @@
 This repo is the authoritative Bai Chan game repo for GitHub:
 
 - Remote: `https://github.com/mnguyen92646/bai-chan-game.git`
-- Local path: `/Users/michaelnguyen/.openclaw/workspace/bai-chan-web`
-- The nearby `/Users/michaelnguyen/.openclaw/workspace/bai-chan-web-dev2` folder is an older side copy, not the GitHub repo.
+- Work from the checkout containing this file; do not rely on a developer-specific path.
 
 ## Start Here
 
@@ -50,3 +49,7 @@ npm run lint -w apps/web
 ```
 
 As of 2026-09-15, both builds pass. Web lint fails on existing style issues; see `HANDOFF.md`.
+
+## Public language versions
+
+When game rules change, update both `docs/public-rules.md` and `docs/public-rules.vi.md`, plus the English and Vietnamese website pages. Keep UI wording in both languages aligned.

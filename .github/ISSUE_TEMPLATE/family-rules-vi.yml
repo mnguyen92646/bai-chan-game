@@ -1,0 +1,64 @@
+name: Chia sẻ luật chơi của gia đình (Tiếng Việt)
+description: Ghi lại một lối chơi Chắn, Tổ Tôm hoặc trò chơi liên quan để đối chiếu.
+title: "Luật gia đình: "
+labels: [rules-research]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã chia sẻ. Issue này công khai: xin đừng đưa tên riêng, thông tin liên lạc hoặc ảnh cá nhân nếu bạn không muốn công bố. Ký ức trực tiếp và chi tiết chưa chắc chắn đều hữu ích. Xin phân biệt điều bạn đã chơi với luật tìm thấy trên mạng.
+  - type: input
+    id: game-name
+    attributes:
+      label: Gia đình bạn gọi trò chơi là gì?
+      placeholder: Bài Chắn, Chắn, Tổ Tôm hoặc tên khác
+    validations:
+      required: true
+  - type: dropdown
+    id: deck-size
+    attributes:
+      label: Bộ bài có bao nhiêu quân?
+      options:
+        - 120 quân
+        - 100 quân
+        - Số khác
+        - Tôi không biết
+    validations:
+      required: true
+  - type: textarea
+    id: deck-details
+    attributes:
+      label: Giữ hoặc bỏ những quân nào?
+      description: Có dùng Nhất, Thang, Lão và Chi Chi không?
+  - type: textarea
+    id: players-and-deal
+    attributes:
+      label: Số người và cách chia
+      description: Mấy người chơi, mỗi người nhận bao nhiêu quân, còn bao nhiêu quân trong nọc?
+    validations:
+      required: true
+  - type: textarea
+    id: turn-and-claims
+    attributes:
+      label: Lượt đi, bốc và ăn quân
+      description: Khi Bốc, Đánh, Ăn, Chíu, Bỏ hoặc trả cửa thì làm gì? Quân nào được lật công khai?
+  - type: textarea
+    id: winning-and-scoring
+    attributes:
+      label: Ù và tính điểm
+      description: Tay bài nào được ù, cần ít nhất bao nhiêu Chắn, có cước và báo/phạt gì? Ví dụ cụ thể rất hữu ích.
+  - type: textarea
+    id: source
+    attributes:
+      label: Bạn biết luật này từ đâu?
+      description: Tự chơi, nghe người thân giải thích, đọc tài liệu hay chơi trên mạng? Có thể chia sẻ vùng miền hoặc thế hệ nếu bạn thấy thoải mái.
+  - type: dropdown
+    id: attribution
+    attributes:
+      label: Chúng tôi có thể ghi tên GitHub của bạn khi tóm tắt luật này không?
+      options:
+        - Có
+        - Không, xin tóm tắt ẩn danh
+        - Hỏi tôi trước
+    validations:
+      required: true

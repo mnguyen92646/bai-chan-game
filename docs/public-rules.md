@@ -1,15 +1,42 @@
-# Current 120-card rules overview
+# How to play our 120-card Bài Chắn
 
-This project records one family's version of Bài Chắn. It uses all 120 cards in the 30-face Tổ Tôm pack. Ordinary published Chắn commonly removes 20 cards, so do not assume every Chắn game follows this profile.
+[English](public-rules.md) · [Tiếng Việt](public-rules.vi.md) · [Illustrated in-game guide](https://bai-chan-play.white-violet-3211.workers.dev/rules)
 
-## Implemented in the game
+This is one family's current table rules. Four relatives answered the private rules questionnaire; some details below remain provisional. Ordinary published Chắn commonly uses 100 cards. This table keeps the full 120-card Tổ Tôm-style deck but makes winning hands from pairs.
 
-- Four players receive 24 cards for the opening player and 23 each for the others. Five players receive 20 and 19 each.
-- The opening player discards first or declares an immediate win if already eligible. Later draws are public; a drawn card appears at a gate rather than privately entering the hand.
-- Ăn uses a held card to pair with an offered card. Chíu claims the fourth copy of a face when the player holds three. A four-card Chíu counts as two Chắn.
-- A completed four-player hand contains 12 pairs with at least eight Chắn. A completed five-player hand contains 10 pairs with at least six Chắn.
-- The special Nhất and Yêu cards stay in play. The game supports certain mixed cạ among them but does not allow a mixed special cạ as the pair that completes a win.
+## 1. Know the cards
 
-## Open questions
+There are nine ranks (Nhất through Cửu) in each of three suits (Vạn, Văn, Sách), plus Chi Chi, Lão, and Thang: 30 faces. Four copies of each make 120 cards.
 
-The family is still checking mandatory Chắn claims versus optional cạ, some restrictions after passing a claim, ordinary wins from returned cards, the last stock card, and the full scoring and penalty schedule. Some behavior in the current engine is provisional. Please use the [rules questionnaire](https://github.com/mnguyen92646/bai-chan-game/issues/new?template=family-rules.yml) to describe another table's rules as its own variant, with a concrete example if possible.
+| Chắn: identical pair | Cạ: same rank, different suits | Chíu: four identical cards |
+| :---: | :---: | :---: |
+| <img src="../apps/web/public/tiles/png/3_vanh.png" alt="Tam Văn" width="42"> <img src="../apps/web/public/tiles/png/3_vanh.png" alt="Tam Văn" width="42"> | <img src="../apps/web/public/tiles/png/3_vanh.png" alt="Tam Văn" width="42"> <img src="../apps/web/public/tiles/png/3_sach.png" alt="Tam Sách" width="42"> | <img src="../apps/web/public/tiles/png/5_van.png" alt="Ngũ Vạn" width="42"> <img src="../apps/web/public/tiles/png/5_van.png" alt="Ngũ Vạn" width="42"> <img src="../apps/web/public/tiles/png/5_van.png" alt="Ngũ Vạn" width="42"> <img src="../apps/web/public/tiles/png/5_van.png" alt="Ngũ Vạn" width="42"> |
+
+Concealed Chắn count without first being exposed. You may claim Cạ before reaching the required number of Chắn. A Chíu is a *chosen* claim of a fourth copy when you hold three; it is exposed and counts as two Chắn.
+
+The three Nhất faces and Chi Chi, Lão, and Thang form a special group. Our table allows mixed Cạ among them, while identical pairs are still Chắn. Lão + Thang is a provisional default. An odd special card may be paired without breaking existing exact pairs. Mixed special Cạ may appear in a winning hand but cannot be the final pair completing Ù.
+
+## 2. Deal and take turns
+
+| Players | Opener | Other players | Winning pairs | Minimum Chắn |
+| :--- | ---: | ---: | ---: | ---: |
+| Four | 24 | 23 each | 12 | 8 |
+| Five | 20 | 19 each | 10 | 6 |
+
+The opener discards without drawing, or takes an immediate opening Ù when qualified. Play proceeds clockwise. The winner opens the next hand.
+
+**Bốc** reveals a wall card at the public gate; it does not enter the drawer's concealed hand. Eligible players can react. **Ăn** combines the offered card with a card from your hand and exposes the pair; then **Đánh** discards another card. An out-of-turn Chíu exposes the quartet and returns a card to the interrupted gate. Play resumes with the interrupted player, who may eat the return and discard again or pass it onward.
+
+Passing an offered Chắn prevents later eating, Chíu, or discarding that face, even after a wall draw. Passing Cạ still allows a later Chíu; the exact later Cạ/Chắn restriction remains disputed. A face you discarded cannot later be eaten. After eating Cạ, you cannot discard both sides of a Cạ or split an existing Cạ to claim another of that group.
+
+## 3. Win or finish the hand
+
+Pair every card and meet the Chắn minimum in the table above. Exposed and concealed combinations count, and Chíu counts as two Chắn. A public wall draw may complete Ù for any eligible player. Another player's discard can complete a win only by Chíu-Ù. Chi Chi, Lão, or Thang cannot be the winning card, including for Chíu-Ù; a nonwinning Chíu with a special card is allowed.
+
+Wins outrank Chíu; competing wins follow seat order from the active gate. Returned cards allow Chíu and Chíu-Ù, while ordinary Ù on a return remains unresolved. Explicitly passing Ù forfeits later wins that hand; discarding instead of an available opening Ù does too. There is no automatic timeout for silence or disconnection. The winner reveals the full hand. If the wall empties without a winner, the hand is a draw and discards are not recycled.
+
+## Provisional choices
+
+The game currently prefers Chắn over Cạ, bans an exact-face Cạ after a pass while allowing a later Chắn, leaves no wall reserve, sends repeated Chíu returns to the interrupted gate, and completes the final turn. The family is still checking those choices, a reclaim deadline, the opener after a drawn hand, scoring, and penalties. Scoring and penalties are not implemented. Rule changes apply to newly dealt hands.
+
+[Share your family's rules](https://github.com/mnguyen92646/bai-chan-game/issues/new?template=family-rules.yml) · [Read the research page](https://michaelnguyen.net/baichan.html)

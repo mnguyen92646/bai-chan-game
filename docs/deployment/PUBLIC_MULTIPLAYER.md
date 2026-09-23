@@ -2,11 +2,11 @@
 
 ## Hosting choice
 
-Use two Cloudflare Workers on the Workers Free plan. `apps/edge` owns private rooms: a SQLite-backed Durable Object per room coordinates WebSockets, persists game state and runs bots. `apps/web` builds the public play routes with vinext and Workers Static Assets. `wrangler.jsonc` files are the deployment configuration. The existing Express/Socket.IO server remains the local/Tailscale preview and is not deployed.
+Use two Cloudflare Workers on the Workers Free plan. `apps/edge` owns private rooms: a SQLite-backed Durable Object per room coordinates WebSockets, persists game state and runs bots. `apps/web` builds the public play routes with vinext and Workers Static Assets. `wrangler.jsonc` files are the deployment configuration. The existing Express/Socket.IO server remains a development preview and is not deployed.
 
 The public web build uses `apps/web/public-app/app`, which links only `/`, `/create`, `/join`, `/practice`, `/rules`, and `/room/[roomId]` into vinext. The build disables the general `public/` asset copy and explicitly copies game tile and audio files. The questionnaire, family response files and development fixtures are absent from that bundle. Keep the normal Next.js build for the private preview.
 
-Do not publish the current Tailscale preview or a direct origin on Michael's Mac. Render's free Node service is an easier compatibility option, but it sleeps after inactivity; the current in-memory rooms would vanish on sleep or restart.
+Do not publish a development preview or expose a developer's local machine directly. Render's free Node service is an easier compatibility option, but it sleeps after inactivity; in-memory rooms would vanish on sleep or restart.
 
 ## Room privacy
 
@@ -19,7 +19,7 @@ Do not publish the current Tailscale preview or a direct origin on Michael's Mac
 
 1. Verify the Durable Object protocol against four- and five-seat games. `apps/edge/smoke.mjs` covers invite-only joining, both seat counts with bot fill, hidden hands, stale actions and rejoining. The room record and wall are stored in the object's SQLite storage, so ordinary hibernation can restore them. Recovery from every possible platform failure remains a release test, not a promise to users.
 2. Admit anyone holding the private link to an open seat. Keep the UI clear that forwarded links also grant access; do not add host approval.
-3. Use Cloudflare edge limits for HTTP room creation and WebSocket connection attempts. The Cloudflare WAF only inspects the initial WebSocket request, so the game backend must still limit message size, message rate, active connections, room count, and room lifetime. CORS alone does not authenticate clients. If hosting through Tailscale Funnel instead, do not assume Cloudflare WAF protections apply.
+3. Use Cloudflare edge limits for HTTP room creation and WebSocket connection attempts. The Cloudflare WAF only inspects the initial WebSocket request, so the game backend must still limit message size, message rate, active connections, room count, and room lifetime. CORS alone does not authenticate clients. A different reverse proxy needs its own protections.
 4. Keep private hand logs out of production telemetry; remove or minimize unnecessary personal data and set a retention period.
 5. Test unknown-room rejection, invitation guessing resistance, rejoin authorization, cross-room isolation, disconnect/reconnect, 4- and 5-player games, and abuse limits in a production-like preview.
 6. Inspect the built public assets for private data, then deploy to the temporary Workers URLs. Link the site only after multiplayer is verified there.

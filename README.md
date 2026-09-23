@@ -1,5 +1,11 @@
 # Bài Chắn
 
+**Language / Ngôn ngữ:** English · [Tiếng Việt](README.vi.md)
+
+<img src="apps/web/public/tiles/png/3_vanh.png" alt="Tam Văn" width="42"> <img src="apps/web/public/tiles/png/3_vanh.png" alt="Tam Văn" width="42"> &nbsp; <img src="apps/web/public/tiles/png/3_vanh.png" alt="Tam Văn" width="42"> <img src="apps/web/public/tiles/png/3_sach.png" alt="Tam Sách" width="42">
+
+**Chắn:** two identical cards. **Cạ:** compatible cards of the same rank in different suits. See the illustrated [120-card rules](docs/public-rules.md) / [luật 120 quân](docs/public-rules.vi.md).
+
 A mobile-first web game using the family's 120-card deck and the original illustrated tile assets.
 
 Play the [public game](https://bai-chan-play.white-violet-3211.workers.dev/) or read the [research note and family rules](https://michaelnguyen.net/baichan.html). If your family plays with this deck, [share your rules](https://github.com/mnguyen92646/bai-chan-game/issues/new?template=family-rules.yml). Code contributions are welcome; start with [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -23,9 +29,9 @@ Open http://localhost:3000. **Practice** starts immediately with three bots and 
 
 For a phone on the same network, use your computer's LAN address. If the backend is elsewhere, set `NEXT_PUBLIC_SERVER_URL` before starting/building the web app.
 
-## Tailscale preview
+## Network development preview
 
-Run `npm run dev:preview:server` and `npm run dev:preview` in separate terminals. Open http://michaels-mac-mini.tail7c0eb7.ts.net:3100 from a device connected to Tailscale. This preview uses ports 3100/3101. `NEXT_PUBLIC_SERVER_PORT` sets the backend port while preserving the page hostname, so remote devices connect to the correct machine. Avoid a localhost `NEXT_PUBLIC_SERVER_URL` for remote testing.
+Run `npm run dev:preview:server` and `npm run dev:preview` in separate terminals. Open port 3100 on the development host from a device on the same trusted network. The backend uses port 3101. `NEXT_PUBLIC_SERVER_PORT` preserves the page hostname for remote devices. Add the web origin to `CORS_ORIGINS` and the hostname to `DEV_ALLOWED_ORIGINS` if needed. Avoid a localhost `NEXT_PUBLIC_SERVER_URL` when testing from another device.
 
 ## What is playable
 
@@ -101,7 +107,7 @@ The server schedules one bot action at a time using the shared practice policy a
 
 `apps/server/bots-smoke.mjs` requires `TEST_SERVER_URL` pointing to an isolated server. It exercises complete 2+2, 2+3, 3+1 and 3+2 tables, host/size restrictions, private hands, new people replacing bots, rematches, reconnects and reset cleanup. `mvp-smoke.mjs` retains all-human four/five-player coverage.
 
-Direct HTTP Tailscale previews on port 3100 connect to backend port 3101. The HTTPS Funnel uses its own origin; its existing invitation-protected proxy must forward `/rooms`, `/room/default`, `/health`, and `/socket.io/*` to port 3101. The rest goes to the web app. Keep the existing invitation access and do not add password authentication.
+Direct HTTP previews on port 3100 connect to backend port 3101. An HTTPS reverse proxy should forward `/rooms`, `/room/default`, `/health`, and `/socket.io/*` to port 3101, with all other paths going to the web app. Keep invitation access for private rooms.
 
 
 ## Tile size and recent actions

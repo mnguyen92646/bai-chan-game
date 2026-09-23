@@ -6,7 +6,7 @@ export function getServerUrl() {
   const env = process.env.NEXT_PUBLIC_SERVER_URL;
   if (env && env.length > 0) return env;
   // Funnel terminates HTTPS and reverse-proxies the web app and Socket.IO
-  // backend on the same public origin. Internal LAN/Tailscale users keep the
+  // backend on the same public origin. Local network users keep the
   // existing direct-to-server path below.
   if (typeof window !== "undefined" && window.location.hostname.endsWith(".ts.net") && (window.location.protocol === "https:" || window.location.port === "8080")) {
     return window.location.origin;

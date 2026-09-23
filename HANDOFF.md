@@ -6,11 +6,10 @@ This document is for a new coding agent taking over the Bai Chan web game. It ca
 
 ## Repository
 
-- Authoritative local repo: `/Users/michaelnguyen/.openclaw/workspace/bai-chan-web`
+- Authoritative repo: this checkout
 - GitHub remote: `https://github.com/mnguyen92646/bai-chan-game.git`
 - Branch: `main`
 - Current upstream sync before this handoff: local `main` matched `origin/main` at `601fe49` (`Adjust Bai Chan discard rules and table layout`).
-- Ignore the sibling folder `bai-chan-web-dev2` unless Michael explicitly asks for archaeology. It is not the GitHub-backed repo.
 
 ## Quick Setup
 
@@ -148,20 +147,14 @@ Private audit logs:
 - Useful for debugging An/Chiu/rule eligibility.
 - Do not commit or share publicly.
 
-Note: `src/index.ts` currently hardcodes the logs directory to the local repo path:
-
-```ts
-const logsDir = "/Users/michaelnguyen/.openclaw/workspace/bai-chan-web/apps/server/logs";
-```
-
-That should become env/config before production hosting.
+`LOGS_DIR` configures the private log directory. Keep its contents outside version control.
 
 ## Known Gaps
 
 - No automated game-rule test suite yet.
 - Web lint fails on existing style issues.
 - `apps/server/src/game/tiles.ts` is a stale placeholder; `chanDeck.ts` is the real deck model.
-- Logs directory path is hardcoded.
+- Use `LOGS_DIR` for private logs.
 - Game state is in-memory only; refresh/rejoin works through player tokens, but server restarts lose room state.
 - Current win/scoring is simplified and does not cover full Vinagames cuoc/scoring.
 - Remaining An/Chiu edge cases need live 4-player verification.

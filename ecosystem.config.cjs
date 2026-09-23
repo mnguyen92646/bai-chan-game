@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'bai-chan-server',
-      cwd: '/Users/michaelnguyen/.openclaw/workspace/bai-chan-web/apps/server',
+      cwd: require('node:path').join(__dirname, 'apps/server'),
       script: 'npm',
       args: 'run dev',
       env: {
@@ -14,7 +14,7 @@ module.exports = {
     },
     {
       name: 'bai-chan-web',
-      cwd: '/Users/michaelnguyen/.openclaw/workspace/bai-chan-web/apps/web',
+      cwd: require('node:path').join(__dirname, 'apps/web'),
       script: 'npm',
       args: 'run dev',
       env: {

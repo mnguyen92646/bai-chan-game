@@ -41,8 +41,7 @@ async function copyInviteLink(link: string): Promise<boolean> {
     }
   }
 
-  // The HTTP Tailscale preview is not a secure browser context, so the
-  // Clipboard API is unavailable there. This remains usable on that preview.
+  // The Clipboard API may be unavailable on an HTTP development preview.
   const field = document.createElement("textarea");
   field.value = link;
   field.setAttribute("readonly", "");

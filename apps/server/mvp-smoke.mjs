@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { io } from "socket.io-client";
-const base = process.env.TEST_SERVER_URL ?? "http://michaels-mac-mini.tail7c0eb7.ts.net:3101";
+const base = process.env.TEST_SERVER_URL ?? "http://localhost:3101";
 const clients = [];
 const emit = (s,event,data={}) => new Promise((resolve,reject)=>s.timeout(4000).emit(event,data,(err,response)=>err?reject(err):resolve(response)));
 const wait = async predicate => { for(let n=0;n<200;n++){if(predicate())return;await new Promise(r=>setTimeout(r,10));}throw new Error("Timed out waiting for broadcast"); };

@@ -2,8 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 
-// Source: hi-res mapped crops (already classified to your chart)
-const srcDir = '/Users/michaelnguyen/.openclaw/workspace/bai-chan-assets/split-hi-mapped';
+// Source: pre-classified, high-resolution card crops.
+const source = process.argv[2] ?? process.env.BAI_CHAN_SOURCE_TILES_DIR;
+if (!source) throw new Error('Pass the card crop directory as an argument or set BAI_CHAN_SOURCE_TILES_DIR.');
+const srcDir = path.resolve(source);
 const outDir = path.resolve('public/tiles/png');
 await fs.mkdir(outDir, { recursive: true });
 

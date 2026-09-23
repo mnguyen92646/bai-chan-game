@@ -14,7 +14,7 @@ if (IS_PRODUCTION && Buffer.byteLength(JWT_SECRET) < 32) {
 }
 const ROOM_TTL_MS = 8 * 60 * 60 * 1000;
 const allowedOrigins = new Set(
-  (process.env.CORS_ORIGINS ?? "http://localhost:3100,http://127.0.0.1:3100,http://michaels-mac-mini.tail7c0eb7.ts.net:3100,http://100.127.71.35:3100")
+  (process.env.CORS_ORIGINS ?? "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3100,http://127.0.0.1:3100")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean)
