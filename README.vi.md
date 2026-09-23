@@ -6,7 +6,7 @@
 
 **Chắn:** hai quân giống hệt. **Cạ:** hai quân hợp lệ cùng hàng, khác chất. Xem [luật chơi 120 quân có hình](docs/public-rules.vi.md) hoặc [hướng dẫn trong trò chơi](https://bai-chan-play.white-violet-3211.workers.dev/rules).
 
-Trò chơi web này ghi lại một lối chơi Bài Chắn 120 quân của gia đình tôi. Có thể [chơi trực tuyến](https://bai-chan-play.white-violet-3211.workers.dev/), đọc [trang tư liệu tiếng Việt](https://michaelnguyen.net/baichan-vi.html), hoặc [chia sẻ luật gia đình bạn](https://bai-chan-rules.white-violet-3211.workers.dev/?lang=vi).
+Trò chơi web này ghi lại một lối chơi Bài Chắn 120 quân của gia đình tôi. Có thể [chơi trực tuyến](https://bai-chan-play.white-violet-3211.workers.dev/), đọc [trang tư liệu tiếng Việt](https://michaelnguyen.net/baichan-vi.html) và [sơ đồ triển khai (tiếng Anh)](https://michaelnguyen.net/baichan-architecture.html), hoặc [chia sẻ luật gia đình bạn](https://bai-chan-rules.white-violet-3211.workers.dev/?lang=vi).
 
 ## Chế độ chơi
 

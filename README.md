@@ -98,7 +98,7 @@ The game suite includes 230 complete simulated hands and verifies tile conservat
 
 Server: `PORT` (3001), `JWT_SECRET`, `DEFAULT_ROOM_ID` (000000), `LOGS_DIR` (defaults to `apps/server/logs`). Web: `NEXT_PUBLIC_SERVER_URL` (defaults to current hostname, port 3001).
 
-The local Socket.IO preview keeps multiplayer rooms in memory, so its rooms disappear on server restart. The [public game](https://bai-chan-play.white-violet-3211.workers.dev/) uses a Durable Object per private invitation room and persists its table state. See [the public multiplayer deployment guide](docs/deployment/PUBLIC_MULTIPLAYER.md) for release commands and remaining checks. Full scoring remains a follow-up rule task.
+The local Socket.IO preview keeps multiplayer rooms in memory, so its rooms disappear on server restart. The [public game](https://bai-chan-play.white-violet-3211.workers.dev/) uses a Durable Object per private invitation room and persists its table state. See [the public multiplayer deployment guide](docs/deployment/PUBLIC_MULTIPLAYER.md) for release commands and remaining checks. The [architecture diagram](https://michaelnguyen.net/baichan-architecture.html) shows how the website, game, rooms, and public questionnaire fit together. Full scoring remains a follow-up rule task.
 
 
 ## Mixed-table verification
